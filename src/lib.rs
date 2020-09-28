@@ -2,23 +2,24 @@ use std::fmt;
 use std::char;
 
 #[derive(Debug, Copy, Clone)]
-struct Position {
-    colum: u8,
+pub struct Position {
+    column: u8,
     row: u8,
 }
 
 impl Position {
-    fn fromStr(code: &str) -> Position {
+    pub fn from_str(code: &str) -> Position {
+        let mut char_iter = code.chars();
         Position {
-            colum: code[0].parse::<u8>().unwrap() - 97,
-            row: code[1].parse::<u8>().unwrap() - 49,
+            column: (char_iter.next().unwrap() as u8) - 97,
+            row: (char_iter.next().unwrap() as u8) - 49,
         }
     }
 }
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}{})", char::from_digit(self.colum+97, 10), char::from_digit(self.row+49, 10))
+        write!(f, "({}{})", (self.column + 97) as char, (self.row+49) as char)
     }
 }
 
@@ -26,22 +27,22 @@ impl fmt::Display for Position {
 struct Move {
     from: Position,
     to: Position,
-    pawnPromo: Option<PromotionType>,
+    pawn_promo: Option<PromotionType>,
 }
 
 impl Move {
-    fn fromStr(code: &str) -> Move {
+    fn from_str(code: &str) -> Move {
         Move {
-            from: Position::fromStr(code[0..2]),
-            to: Position::fromStr(code[3..5]),
-            pawnPromo: PromotionType::fromStr(code[2..3])
+            from: Position::from_str(&code[0..2]),
+            to: Position::from_str(&code[3..5]),
+            pawn_promo: PromotionType::from_str(&code[2..3])
         }
     }
 }
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        //TODO replace the seperator with the proper PawnPromo character
+        //TODO replace the separator with the proper PawnPromo character
         write!(f, "{}-{}", self.from, self.to)
     }
 }
@@ -70,7 +71,7 @@ enum PromotionType {
 }
 
 impl PromotionType {
-    fn fromStr(s: &str) -> Option<PromotionType> {
+    fn from_str(s: &str) -> Option<PromotionType> {
         match s {
             "-" => None,
             "Q" => Some(PromotionType::Queen),
@@ -108,7 +109,7 @@ struct GameState {
     board: [[Option<Figure>; 8]; 8],
     white_king_pos: Position,
     black_king_pos: Position,
-    enpassent_intercept_pos: Option<Position>,
+    en_passant_intercept_pos: Option<Position>,
     has_white_left_rook_moved: bool,
     has_white_right_rook_moved: bool,
     has_white_king_moved: bool,
@@ -148,9 +149,9 @@ impl GameState {
                     Some(BLACK_ROOK),
                 ],
             ],
-            white_king_pos: Position::fromStr("e1"),
-            black_king_pos: Position::fromStr("e8"),
-            enpassent_intercept_pos: None,
+            white_king_pos: Position::from_str("e1"),
+            black_king_pos: Position::from_str("e8"),
+            en_passant_intercept_pos: None,
             has_white_left_rook_moved: true,
             has_white_right_rook_moved: true,
             has_white_king_moved: true,
