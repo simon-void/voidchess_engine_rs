@@ -1,42 +1,49 @@
 use std::fmt;
 use std::char;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Position {
     column: u8,
     row: u8,
 }
 
-impl Position {
-    pub fn from_str(code: &str) -> Position {
+impl FromStr for Position {
+    type Err = ParseIntError;
+
+    fn from_str(code: &str) -> Result<Self, Self::Err> {
         let mut char_iter = code.chars();
-        Position {
+
+        Ok(Position {
             column: (char_iter.next().unwrap() as u8) - 97,
             row: (char_iter.next().unwrap() as u8) - 49,
-        }
+        })
     }
 }
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}{})", (self.column + 97) as char, (self.row+49) as char)
+        write!(f, "{}{}", (self.column + 97) as char, (self.row+49) as char)
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-struct Move {
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct Move {
     from: Position,
     to: Position,
     pawn_promo: Option<PromotionType>,
 }
 
-impl Move {
-    fn from_str(code: &str) -> Move {
-        Move {
-            from: Position::from_str(&code[0..2]),
-            to: Position::from_str(&code[3..5]),
+impl FromStr for Move {
+    type Err = ParseIntError;
+
+    fn from_str(code: &str) -> Result<Self, Self::Err> {
+        Ok(Move {
+            from: Position::from_str(&code[0..2]).unwrap(),
+            to: Position::from_str(&code[3..5]).unwrap(),
             pawn_promo: PromotionType::from_str(&code[2..3])
-        }
+        })
     }
 }
 
@@ -62,7 +69,7 @@ enum FigureType {
     King,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum PromotionType {
     Rook,
     Knight,
@@ -149,8 +156,8 @@ impl GameState {
                     Some(BLACK_ROOK),
                 ],
             ],
-            white_king_pos: Position::from_str("e1"),
-            black_king_pos: Position::from_str("e8"),
+            white_king_pos: "e1".parse::<Position>().unwrap(),
+            black_king_pos: "e8".parse::<Position>().unwrap(),
             en_passant_intercept_pos: None,
             has_white_left_rook_moved: true,
             has_white_right_rook_moved: true,
