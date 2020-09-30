@@ -1,5 +1,4 @@
-use voidchess_engine_rs::Position;
-use voidchess_engine_rs::Move;
+use voidchess_engine_rs::{Position, Move};
 
 fn main() {
     println!("Hello VoidChess");
