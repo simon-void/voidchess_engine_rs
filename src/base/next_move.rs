@@ -9,6 +9,16 @@ pub struct Move {
     pub pawn_promo: PawnPromotion,
 }
 
+impl Move {
+    pub fn new(from: Position, to: Position) -> Move {
+        Move {
+            from,
+            to,
+            pawn_promo: PawnPromotion::No,
+        }
+    }
+}
+
 impl str::FromStr for Move {
     type Err = ();
 
@@ -25,11 +35,6 @@ impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}{}", self.from, self.pawn_promo, self.to)
     }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Colour {
-    Black, White,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

@@ -8,6 +8,16 @@ pub struct Position {
     pub row: u8,
 }
 
+impl Position {
+    pub fn get_row_distance(&self, other: Position) -> u8 {
+        if self.row > other.row {
+            self.row - other.row
+        } else {
+            other.row - self.row
+        }
+    }
+}
+
 impl str::FromStr for Position {
     type Err = ();
 

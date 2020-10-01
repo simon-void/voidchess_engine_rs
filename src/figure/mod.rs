@@ -1,9 +1,23 @@
-use crate::base::Colour;
+use crate::base::Color;
+use std::fmt;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Figure {
     pub fig_type: FigureType,
-    pub color: Colour,
+    pub color: Color,
+}
+
+impl fmt::Display for Figure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.fig_type {
+            FigureType::Pawn => write!(f, "{}-Pawn", self.color),
+            FigureType::Rook(_) => write!(f, "{}-Rook", self.color),
+            FigureType::Knight => write!(f, "{}-Knight", self.color),
+            FigureType::Bishop => write!(f, "{}-Bishop", self.color),
+            FigureType::Queen => write!(f, "{}-Queen", self.color),
+            FigureType::King => write!(f, "{}-King", self.color),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
