@@ -1,9 +1,9 @@
 use std::fmt;
-use std::iter::Iterator;
+use std::iter::{Iterator};
 use std::ops::Range;
 use std::str;
 use crate::base::Color;
-use crate::game::Board;
+use crate::game::{Board, FieldContent};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Position {
@@ -13,7 +13,7 @@ pub struct Position {
 
 impl Position {
     pub fn safe_new(column: i8, row: i8) -> Option<Position> {
-        if !(range07.contains(&column) && range07.contains(&row)) {
+        if !(RANGE_07.contains(&column) && RANGE_07.contains(&row)) {
             return None
         }
         Some(Position {
@@ -59,21 +59,47 @@ impl Position {
         Position::safe_new(self.column + column_delta, self.row + row_delta)
     }
 
-    pub fn reachableDirectedPositions(
-        fig_pos: Position,
+    pub fn reachable_directed_positions<'a, 'b>(
+        &'a self,
         fig_color: Color,
         direction: Direction,
-        board: &Board,
-    ) -> DirectedPosIterator {
-        DirectedPosIterator::new(fig_pos, fig_color, direction, board)
+        board: &'b Board,
+    ) -> DirectedPosIterator<'b > {
+        DirectedPosIterator::new(*self, fig_color, direction, board)
     }
 
-    pub fn reachableKnightPositions(
-        knight_pos: Position,
+    // pub fn reachable_straight_positions<'a, 'b>(
+    //     &'a self,
+    //     fig_color: Color,
+    //     board: &'b Board,
+    // ) -> impl Iterator<Item=&'b Position> {
+    //     let pos_iter1= DirectedPosIterator::new(*self, fig_color, Direction::Up, board);
+    //     let pos_iter2= DirectedPosIterator::new(*self, fig_color, Direction::Right, board);
+    //     let pos_iter3= DirectedPosIterator::new(*self, fig_color, Direction::Down, board);
+    //     let pos_iter4= DirectedPosIterator::new(*self, fig_color, Direction::Left, board);
+    //
+    //     pos_iter1.chain(pos_iter2).into_iter().chain(pos_iter3).into_iter().chain(pos_iter4).into_iter()
+    // }
+    //
+    // pub fn reachable_diagonal_positions<'a, 'b>(
+    //     &'a self,
+    //     fig_color: Color,
+    //     board: &'b Board,
+    // ) -> impl Iterator<Item=&'b Position> {
+    //     let pos_iter1= DirectedPosIterator::new(*self, fig_color, Direction::UpRight, board);
+    //     let pos_iter2= DirectedPosIterator::new(*self, fig_color, Direction::UpLeft, board);
+    //     let pos_iter3= DirectedPosIterator::new(*self, fig_color, Direction::DownLeft, board);
+    //     let pos_iter4= DirectedPosIterator::new(*self, fig_color, Direction::DownRight, board);
+    //
+    //     pos_iter1.chain(pos_iter2).into_iter().chain(pos_iter3).into_iter().chain(pos_iter4).into_iter()
+    // }
+
+    pub fn reachable_knight_positions<'a, 'b>(
+        &'a self,
         knight_color: Color,
-        board: &Board,
-    ) -> KnightPosIterator {
-        KnightPosIterator::new(knight_pos, knight_color, board)
+        board: &'b Board,
+    ) -> KnightPosIterator<'b> {
+        KnightPosIterator::new(*self, knight_color, board)
     }
 }
 
@@ -88,7 +114,7 @@ impl str::FromStr for Position {
             panic!("only 2 chars expected for Position: {}", code)
         }
 
-        if !(range07.contains(&column) && range07.contains(&row)) {
+        if !(RANGE_07.contains(&column) && RANGE_07.contains(&row)) {
             panic!("illegal value for Position: {}", code);
         }
 
@@ -143,16 +169,13 @@ impl Iterator for DirectedPosIterator<'_> {
         };
         let some_new_pos = Some(new_pos);
 
-        match self.board.get_figure(new_pos) {
-            Some(figure) => {
-                if figure.color==self.moving_fig_color {
-                    None
-                } else {
-                    self.latest_position = None;
-                    some_new_pos
-                }
+        match self.board.get_content_type(new_pos, self.moving_fig_color) {
+            FieldContent::OwnFigure => None,
+            FieldContent::OpponentFigure => {
+                self.latest_position = None;
+                some_new_pos
             }
-            None => {
+            FieldContent::Empty => {
                 self.latest_position = some_new_pos;
                 some_new_pos
             }
@@ -202,11 +225,13 @@ impl Iterator for KnightPosIterator<'_> {
                 _ => panic!("index should lie between [0,7] but is {}", self.index)
             };
             self.index = self.index + 1;
-            let opt_fig= opt_pos.map(|pos|{self.board.get_figure(pos)}).flatten();
-            let opt_pos= match opt_fig {
-                Some(figure) => if figure.color==self.knight_color {None} else {opt_pos},
-                None => opt_pos,
-            };
+            let opt_pos = opt_pos.map(|pos|{
+                let field_content = self.board.get_content_type(pos, self.knight_color);
+                match field_content {
+                    FieldContent::OwnFigure => None,
+                    _ => Some(pos)
+                }
+            }).flatten();
             if opt_pos.is_some() {
                 return opt_pos;
             }
@@ -232,17 +257,17 @@ impl Direction {
     }
 }
 
-pub static all_directions: [Direction; 8] = [
+pub static ALL_DIRECTIONS: [Direction; 8] = [
     Direction::Up, Direction::UpRight, Direction::Right, Direction::DownRight,
     Direction::Down, Direction::DownLeft, Direction::Left, Direction::UpLeft
 ];
 
-pub static straight_directions: [Direction; 4] = [
+pub static STRAIGHT_DIRECTIONS: [Direction; 4] = [
     Direction::Up, Direction::Right, Direction::Down, Direction::Left
 ];
 
-pub static diagonal_directions: [Direction; 4] = [
+pub static DIAGONAL_DIRECTIONS: [Direction; 4] = [
     Direction::UpRight, Direction::DownRight, Direction::DownLeft, Direction::UpLeft
 ];
 
-static range07: Range<i8> = 0..8;
+static RANGE_07: Range<i8> = 0..8;

@@ -84,11 +84,26 @@ impl Board {
         // }
         self.state[pos.row as usize][pos.column as usize] = opt_figure
     }
+
+    pub fn is_empty(&self, pos: Position) -> bool {
+        self.get_figure(pos).is_none()
+    }
+
+    pub fn get_content_type(&self, pos: Position, color: Color) -> FieldContent {
+        match self.get_figure(pos) {
+            Some(figure) => if figure.color==color {
+                FieldContent::OwnFigure
+            } else {
+                FieldContent::OpponentFigure
+            },
+            None => FieldContent::Empty,
+        }
+    }
 }
 
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        writeln!(f, "");
+        writeln!(f);
         for row_index in (0..8).rev() {
             let row: [Option<Figure>; 8] = self.state[row_index];
             row.iter().for_each(|&fig_option| {
@@ -100,7 +115,7 @@ impl Display for Board {
                                 Color::White => "♙",
                                 Color::Black => "♟",
                             },
-                            FigureType::Rook(RookType) => match figure.color {
+                            FigureType::Rook(_) => match figure.color {
                                 Color::White => "♖",
                                 Color::Black => "♜",
                             },
@@ -129,4 +144,9 @@ impl Display for Board {
         }
         writeln!(f, "abcdefgh")
     }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum FieldContent {
+    Empty, OwnFigure, OpponentFigure,
 }

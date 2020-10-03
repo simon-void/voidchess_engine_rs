@@ -5,22 +5,22 @@ use crate::game::Board;
 
 #[derive(Debug)]
 pub struct MatchState {
-    board: Board,
-    next_turn_by: Color,
-    white_king_pos: Position,
-    black_king_pos: Position,
-    en_passant_intercept_pos: Option<Position>,
-    is_white_queen_side_castling_possible: bool,
-    is_white_king_side_castling_possible: bool,
-    is_black_queen_side_castling_possible: bool,
-    is_black_king_side_castling_possible: bool,
+    pub board: Board,
+    pub turn_by: Color,
+    pub white_king_pos: Position,
+    pub black_king_pos: Position,
+    pub en_passant_intercept_pos: Option<Position>,
+    pub is_white_queen_side_castling_possible: bool,
+    pub is_white_king_side_castling_possible: bool,
+    pub is_black_queen_side_castling_possible: bool,
+    pub is_black_king_side_castling_possible: bool,
 }
 
 impl MatchState {
     pub fn new() -> MatchState {
         MatchState {
             board: Board::classic(),
-            next_turn_by: Color::White,
+            turn_by: Color::White,
             white_king_pos: "e1".parse::<Position>().unwrap(),
             black_king_pos: "e8".parse::<Position>().unwrap(),
             en_passant_intercept_pos: None,
@@ -48,7 +48,7 @@ impl MatchState {
         ) = match moving_figure.fig_type {
             FigureType::King => {
                 let is_castling = if let Some(figure_to_be_caught) = self.board.get_figure(next_move.to) {
-                    figure_to_be_caught.color == self.next_turn_by
+                    figure_to_be_caught.color == self.turn_by
                 } else {
                     false
                 };
@@ -175,7 +175,7 @@ impl MatchState {
 
         MatchState {
             board: new_board,
-            next_turn_by: self.next_turn_by.toggle(),
+            turn_by: self.turn_by.toggle(),
             white_king_pos: new_white_king_pos,
             black_king_pos: new_black_king_pos,
             en_passant_intercept_pos: new_en_passant_intercept_pos,

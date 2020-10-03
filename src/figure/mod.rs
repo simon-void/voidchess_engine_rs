@@ -1,10 +1,19 @@
+mod functions;
+
 use crate::base::Color;
 use std::fmt;
+use crate::{Move, Position, MatchState};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Figure {
     pub fig_type: FigureType,
     pub color: Color,
+}
+
+impl Figure {
+    pub fn for_reachable_moves<F>(&self, pos: Position, match_state: &MatchState, inform_of: F) where F: Fn(Move) {
+        functions::for_reachable_moves(self.fig_type, pos, match_state, inform_of)
+    }
 }
 
 impl fmt::Display for Figure {
