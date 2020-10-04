@@ -37,6 +37,40 @@ impl fmt::Display for Move {
     }
 }
 
+// Default is needed, so that Move can be stored in a TinyVec
+impl Default for Move {
+    fn default() -> Self {
+        Move {
+            from: Position{column: 1, row: 2,},
+            to: Position{column: 6, row: 5,},
+            pawn_promo: PawnPromotion::Yes(PromotionType::Bishop)
+        }
+    }
+}
+
+pub struct MoveArray {
+    array: [Move; 80]
+}
+
+impl tinyvec::Array for MoveArray {
+    type Item = Move;
+    const CAPACITY: usize = 80;
+
+    fn as_slice(&self) -> &[Self::Item] {
+        &self.array
+    }
+
+    fn as_slice_mut(&mut self) -> &mut [Self::Item] {
+        &mut self.array
+    }
+
+    fn default() -> Self {
+        MoveArray {
+            array: [Move::default(); 80]
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PromotionType {
     Rook,

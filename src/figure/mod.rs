@@ -1,8 +1,9 @@
 mod functions;
 
-use crate::base::Color;
 use std::fmt;
-use crate::{Move, Position, MatchState};
+use tinyvec::*;
+use crate::base::*;
+use crate::{Position, MatchState};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Figure {
@@ -11,8 +12,8 @@ pub struct Figure {
 }
 
 impl Figure {
-    pub fn for_reachable_moves<F>(&self, pos: Position, match_state: &MatchState, inform_of: F) where F: Fn(Move) {
-        functions::for_reachable_moves(self.fig_type, pos, match_state, inform_of)
+    pub fn for_reachable_moves(&self, pos: Position, match_state: &MatchState, move_collector: &mut TinyVec<MoveArray>) {
+        functions::for_reachable_moves(self.fig_type, pos, match_state, move_collector)
     }
 }
 
