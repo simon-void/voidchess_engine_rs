@@ -1,8 +1,8 @@
 use tinyvec::*;
 use crate::figure::{FigureType};
-use crate::{Position, Move, MatchState};
+use crate::{Position, Move, GameState};
 use crate::game::{Board, FieldContent};
-use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, MoveArray};
+use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, MoveArray, Moves};
 
 #[cfg(test)]
 // mod tests {
@@ -13,7 +13,7 @@ use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTION
 
     #[test]
     fn testing_works() {
-        let mut move_collection: TinyVec<MoveArray> = tiny_vec!();
+        let mut move_collection: Moves = tiny_vec!();
         for_reachable_knight_moves(
             Color::White,
             "b1".parse::<Position>().unwrap(),
@@ -27,8 +27,8 @@ use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTION
 pub fn for_reachable_moves(
     fig_type: FigureType,
     pos: Position,
-    match_state: &MatchState,
-    move_collector: &mut TinyVec<MoveArray>,
+    match_state: &GameState,
+    move_collector: &mut Moves,
 ) {
     match fig_type {
         FigureType::Pawn => for_reachable_pawn_moves(
@@ -92,7 +92,7 @@ fn for_reachable_pawn_moves(
     pawn_pos: Position,
     board: &Board,
     opt_en_passant_intercept_pos: Option<Position>,
-    move_collector: &mut TinyVec<MoveArray>,
+    move_collector: &mut Moves,
 ) {
     fn move_collector_diagonal_pawn_move(
         color: Color,
@@ -100,7 +100,7 @@ fn for_reachable_pawn_moves(
         diagonal_forward_pos: Position,
         board: &Board,
         opt_en_passant_intercept_pos: Option<Position>,
-        move_collector: &mut TinyVec<MoveArray>,
+        move_collector: &mut Moves,
     ) {
         match board.get_content_type(diagonal_forward_pos, color) {
             FieldContent::OpponentFigure => move_collector_pawn_moves(pawn_pos, diagonal_forward_pos, move_collector),
@@ -118,7 +118,7 @@ fn for_reachable_pawn_moves(
     fn move_collector_pawn_moves(
         pawn_pos_from: Position,
         pawn_pos_to: Position,
-        move_collector: &mut TinyVec<MoveArray>,
+        move_collector: &mut Moves,
     ) {
         if pawn_pos_to.row==0 || pawn_pos_to.row==7 {
             [
@@ -166,7 +166,7 @@ fn for_reachable_rook_moves(
     color: Color,
     rook_pos: Position,
     board: &Board,
-    move_collector: &mut TinyVec<MoveArray>,
+    move_collector: &mut Moves,
 ) {
     STRAIGHT_DIRECTIONS.iter().for_each(|&direction|{
         for pos_to in rook_pos.reachable_directed_positions(color, direction, board) {
@@ -179,7 +179,7 @@ fn for_reachable_knight_moves(
     color: Color,
     knight_pos: Position,
     board: &Board,
-    move_collector: &mut TinyVec<MoveArray>,
+    move_collector: &mut Moves,
 ) {
     for pos_to in knight_pos.reachable_knight_positions(color, board) {
         move_collector.push(Move::new(knight_pos, pos_to));
@@ -190,7 +190,7 @@ fn for_reachable_bishop_moves(
     color: Color,
     bishop_pos: Position,
     board: &Board,
-    move_collector: &mut TinyVec<MoveArray>,
+    move_collector: &mut Moves,
 ) {
     DIAGONAL_DIRECTIONS.iter().for_each(|&direction|{
         for pos_to in bishop_pos.reachable_directed_positions(color, direction, board) {
@@ -203,7 +203,7 @@ fn for_reachable_queen_moves(
     color: Color,
     queen_pos: Position,
     board: &Board,
-    move_collector: &mut TinyVec<MoveArray>,
+    move_collector: &mut Moves,
 ) {
     ALL_DIRECTIONS.iter().for_each(|&direction|{
         for pos_to in queen_pos.reachable_directed_positions(color, direction, board) {
@@ -218,7 +218,7 @@ fn for_reachable_king_moves(
     board: &Board,
     is_queen_side_castling_possible: bool,
     is_king_side_castling_possible: bool,
-    move_collector: &mut TinyVec<MoveArray>,
+    move_collector: &mut Moves,
 ) {
     ALL_DIRECTIONS.iter().for_each(|&direction|{
         if let Some(pos_to) = king_pos.step(direction) {

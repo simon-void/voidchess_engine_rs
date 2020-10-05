@@ -1,9 +1,10 @@
 mod position;
-mod next_move;
+mod a_move;
 
-pub use next_move::*;
+pub use a_move::*;
 pub use position::*;
 use std::fmt;
+use std::ops::Range;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Color {
@@ -27,3 +28,5 @@ impl fmt::Display for Color {
         }
     }
 }
+
+pub const USIZE_RANGE_07: Range<usize> = 0..8;

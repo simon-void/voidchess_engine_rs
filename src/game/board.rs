@@ -1,7 +1,8 @@
 use crate::figure::{Figure, FigureType, RookType};
-use crate::base::Color;
+use crate::base::{Color, USIZE_RANGE_07};
 use crate::Position;
 use std::fmt::{Display, Formatter, Result};
+use std::ops::Range;
 
 static WHITE_PAWN: Figure = Figure {fig_type:FigureType::Pawn, color: Color::White,};
 static WHITE_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook(RookType::QueenSide), color: Color::White,};
@@ -71,6 +72,52 @@ impl Board {
                 [None; 8],
             ],
         }
+    }
+
+    pub fn get_all_figures_of_color(&self, color: Color) -> [Option<(Figure, Position)>; 16] {
+        let mut figures: [Option<(Figure, Position)>; 16] = [None; 16];
+        let mut next_index: usize = 0;
+        for row_index in USIZE_RANGE_07 {
+            let row = self.state[row_index];
+            for column_index in USIZE_RANGE_07 {
+                if let Some(figure) = row[column_index] {
+                    if figure.color == color {
+                        figures[next_index] = Some(
+                            (figure, Position {column: column_index as i8, row: row_index as i8,})
+                        );
+                        next_index = next_index + 1;
+                    }
+                }
+            }
+        }
+        figures
+    }
+
+    pub fn get_white_and_black_figures(&self) -> ([Option<(FigureType, Position)>; 16],[Option<(FigureType, Position)>; 16]) {
+        let mut white_figures: [Option<(FigureType, Position)>; 16] = [None; 16];
+        let mut black_figures: [Option<(FigureType, Position)>; 16] = [None; 16];
+        let mut next_white_index: usize = 0;
+        let mut next_black_index: usize = 0;
+
+        for row_index in USIZE_RANGE_07 {
+            let row = self.state[row_index];
+            for column_index in USIZE_RANGE_07 {
+                if let Some(figure) = row[column_index] {
+                    if figure.color == Color::White {
+                        white_figures[next_white_index] = Some(
+                            (figure.fig_type, Position { column: column_index as i8, row: row_index as i8 })
+                        );
+                        next_white_index = next_white_index + 1;
+                    } else {
+                        black_figures[next_black_index] = Some(
+                            (figure.fig_type, Position { column: column_index as i8, row: row_index as i8 })
+                        );
+                        next_black_index = next_black_index + 1;
+                    }
+                }
+            }
+        }
+        (white_figures, black_figures)
     }
 
     pub fn get_figure(&self, pos: Position) -> Option<Figure> {

@@ -13,7 +13,7 @@ pub struct Position {
 
 impl Position {
     pub fn safe_new(column: i8, row: i8) -> Option<Position> {
-        if !(RANGE_07.contains(&column) && RANGE_07.contains(&row)) {
+        if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
             return None
         }
         Some(Position {
@@ -114,7 +114,7 @@ impl str::FromStr for Position {
             panic!("only 2 chars expected for Position: {}", code)
         }
 
-        if !(RANGE_07.contains(&column) && RANGE_07.contains(&row)) {
+        if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
             panic!("illegal value for Position: {}", code);
         }
 
@@ -270,4 +270,4 @@ pub static DIAGONAL_DIRECTIONS: [Direction; 4] = [
     Direction::UpRight, Direction::DownRight, Direction::DownLeft, Direction::UpLeft
 ];
 
-static RANGE_07: Range<i8> = 0..8;
+const I8_RANGE_07: Range<i8> = 0..8;

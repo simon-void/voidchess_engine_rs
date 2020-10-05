@@ -3,7 +3,7 @@ mod functions;
 use std::fmt;
 use tinyvec::*;
 use crate::base::*;
-use crate::{Position, MatchState};
+use crate::{Position, GameState};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Figure {
@@ -12,7 +12,7 @@ pub struct Figure {
 }
 
 impl Figure {
-    pub fn for_reachable_moves(&self, pos: Position, match_state: &MatchState, move_collector: &mut TinyVec<MoveArray>) {
+    pub fn for_reachable_moves(&self, pos: Position, match_state: &GameState, move_collector: &mut Moves) {
         functions::for_reachable_moves(self.fig_type, pos, match_state, move_collector)
     }
 }
@@ -38,6 +38,22 @@ pub enum FigureType {
     Bishop,
     Queen,
     King,
+}
+
+impl PartialEq for FigureType {
+    fn eq(&self, other: &FigureType) -> bool {
+        fn rank(this: &FigureType) -> u8 {
+            match this {
+                FigureType::Pawn => 1,
+                FigureType::Rook(_) => 2,
+                FigureType::Knight => 3,
+                FigureType::Bishop => 4,
+                FigureType::Queen => 5,
+                FigureType::King => 6,
+            }
+        }
+        rank(self)==rank(other)
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

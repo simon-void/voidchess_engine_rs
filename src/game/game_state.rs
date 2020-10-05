@@ -1,14 +1,15 @@
-use crate::base::{Color, Position, Move, PawnPromotion};
+use crate::base::{Color, Position, Move, PawnPromotion, MoveArray, Moves};
 use crate::figure::{Figure, FigureType, RookType};
 use std::fmt::{Display, Formatter, Result};
 use crate::game::Board;
+use tinyvec::{TinyVec, tiny_vec};
 
-#[derive(Debug)]
-pub struct MatchState {
+#[derive(Clone, Debug)]
+pub struct GameState {
     pub board: Board,
     pub turn_by: Color,
-    pub white_king_pos: Position,
-    pub black_king_pos: Position,
+    white_king_pos: Position,
+    black_king_pos: Position,
     pub en_passant_intercept_pos: Option<Position>,
     pub is_white_queen_side_castling_possible: bool,
     pub is_white_king_side_castling_possible: bool,
@@ -16,9 +17,9 @@ pub struct MatchState {
     pub is_black_king_side_castling_possible: bool,
 }
 
-impl MatchState {
-    pub fn new() -> MatchState {
-        MatchState {
+impl GameState {
+    pub fn classic() -> GameState {
+        GameState {
             board: Board::classic(),
             turn_by: Color::White,
             white_king_pos: "e1".parse::<Position>().unwrap(),
@@ -31,7 +32,26 @@ impl MatchState {
         }
     }
 
-    pub fn do_move(&self, next_move: Move) -> MatchState {
+    pub fn get_reachable_moves(&self) -> Moves {
+        let mut move_collector: Moves = tiny_vec!();
+        let figures_of_color_with_pos: [Option<(Figure, Position)>; 16] =
+            self.board.get_all_figures_of_color(self.turn_by);
+
+        for i in 0..16 as usize {
+            match figures_of_color_with_pos[i] {
+                Some((figure, pos)) => {
+                    figure.for_reachable_moves(pos, self, &mut move_collector);
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+
+        move_collector
+    }
+
+    pub fn do_move(&self, next_move: Move) -> GameState {
         if next_move.to==self.white_king_pos || next_move.to==self.black_king_pos {
             panic!("move {} would capture a king on game {}", next_move, self.board)
         }
@@ -123,7 +143,19 @@ impl MatchState {
                 }
             },
             FigureType::Pawn => {
-                match self.compute_pawn_move_type(next_move) {
+                fn compute_pawn_move_type(this: &GameState, pawn_move: Move) -> PawnMoveType {
+                    if pawn_move.from.get_row_distance(pawn_move.to) == 2 {
+                        return PawnMoveType::DoubleStep
+                    }
+                    if let Some(en_passant_pos) = this.en_passant_intercept_pos {
+                        if pawn_move.to == en_passant_pos {
+                            return PawnMoveType::EnPassantIntercept
+                        }
+                    }
+                    PawnMoveType::SingleStep
+                }
+
+                match compute_pawn_move_type(self, next_move) {
                     PawnMoveType::SingleStep => {
                         do_normal_move(&mut new_board, next_move);
                         (
@@ -173,7 +205,7 @@ impl MatchState {
             },
         };
 
-        MatchState {
+        GameState {
             board: new_board,
             turn_by: self.turn_by.toggle(),
             white_king_pos: new_white_king_pos,
@@ -186,16 +218,11 @@ impl MatchState {
         }
     }
 
-    fn compute_pawn_move_type(&self, pawn_move: Move) -> PawnMoveType {
-        if pawn_move.from.get_row_distance(pawn_move.to) == 2 {
-            return PawnMoveType::DoubleStep
+    pub fn get_passive_kings_pos(&self) -> Position {
+        match self.turn_by {
+            Color::White => self.black_king_pos,
+            Color::Black => self.white_king_pos,
         }
-        if let Some(en_passant_pos) = self.en_passant_intercept_pos {
-            if pawn_move.to == en_passant_pos {
-                return PawnMoveType::EnPassantIntercept
-            }
-        }
-        PawnMoveType::SingleStep
     }
 }
 
@@ -271,7 +298,7 @@ enum PawnMoveType {
     SingleStep, DoubleStep, EnPassantIntercept,
 }
 
-impl Display for MatchState {
+impl Display for GameState {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(f, "{}", self.board)
     }
