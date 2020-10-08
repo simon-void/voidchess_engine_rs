@@ -1,8 +1,8 @@
-use crate::base::{Color, Position, Move, PawnPromotion, MoveArray, Moves};
+use crate::base::{Color, Position, Move, PawnPromotion, Moves};
 use crate::figure::{Figure, FigureType, RookType};
 use std::fmt::{Display, Formatter, Result};
 use crate::game::Board;
-use tinyvec::{TinyVec, tiny_vec};
+use tinyvec::*;
 
 #[derive(Clone, Debug)]
 pub struct GameState {
@@ -171,7 +171,10 @@ impl GameState {
                         do_normal_move(&mut new_board, next_move);
                         (
                             self.white_king_pos, self.black_king_pos,
-                            Some(Position { column: next_move.to.column, row: (next_move.from.row + next_move.to.row) / 2 }),
+                            Some(Position::unchecked_new(
+                                next_move.to.column,
+                                (next_move.from.row + next_move.to.row) / 2,
+                            )),
                             self.is_white_queen_side_castling_possible,
                             self.is_white_king_side_castling_possible,
                             self.is_black_queen_side_castling_possible,
@@ -247,23 +250,11 @@ fn do_castling_move(
     let king_to: Position;
     let rook_to: Position;
     if is_king_side_castling {
-        king_to = Position {
-            column: 6,
-            row: castling_row,
-        };
-        rook_to = Position {
-            column: 5,
-            row: castling_row,
-        }
+        king_to = Position::unchecked_new(6, castling_row);
+        rook_to = Position::unchecked_new(5, castling_row)
     } else {
-        king_to = Position {
-            column: 2,
-            row: castling_row,
-        };
-        rook_to = Position {
-            column: 3,
-            row: castling_row,
-        }
+        king_to = Position::unchecked_new(2, castling_row);
+        rook_to = Position::unchecked_new(3, castling_row)
     }
     // move the king
     // (this simplified approach only works in classical chess, not in all chess960 positions)
@@ -287,10 +278,8 @@ fn do_en_passant_move(
     next_move: Move,
 ) {
     do_normal_move(new_board, next_move);
-    let double_stepped_pawn_pos = Position {
-        column: next_move.to.column,
-        row: next_move.from.row,
-    };
+    let double_stepped_pawn_pos =
+        Position::unchecked_new(next_move.to.column, next_move.from.row);
     new_board.set_figure(double_stepped_pawn_pos, None)
 }
 

@@ -3,10 +3,8 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::{Move, Position};
-use tinyvec::TinyVec;
+use crate::{Move};
 use crate::base::{Moves};
-use crate::engine::evaluations::DrawReason;
 
 #[derive(Clone, Debug)]
 pub struct Game {

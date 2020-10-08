@@ -1,4 +1,3 @@
-use crate::engine::evaluations::Evaluation;
 use crate::{GameState, Position};
 use crate::base::{Color, Direction};
 use crate::figure::FigureType;

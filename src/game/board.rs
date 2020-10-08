@@ -1,5 +1,6 @@
 use crate::figure::{Figure, FigureType, RookType};
-use crate::base::{Color, USIZE_RANGE_07};
+use crate::base::{Color};
+use crate::base::I8_RANGE_07;
 use crate::Position;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
@@ -22,71 +23,57 @@ static BLACK_KING: Figure = Figure {fig_type:FigureType::King, color: Color::Bla
 
 #[derive(Clone, Debug)]
 pub struct Board {
-    state: [[Option<Figure>; 8]; 8],
+    state: [Option<Figure>; 64],
 }
 
 impl Board {
     pub fn classic() -> Board {
         Board {
             state: [
-                [
-                    Some(WHITE_QUEEN_SIDE_ROOK),
-                    Some(WHITE_KNIGHT),
-                    Some(WHITE_BISHOP),
-                    Some(WHITE_QUEEN),
-                    Some(WHITE_KING),
-                    Some(WHITE_BISHOP),
-                    Some(WHITE_KNIGHT),
-                    Some(WHITE_KING_SIDE_ROOK),
-                ],
-                [Some(WHITE_PAWN); 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [Some(BLACK_PAWN); 8],
-                [
-                    Some(BLACK_QUEEN_SIDE_ROOK),
-                    Some(BLACK_KNIGHT),
-                    Some(BLACK_BISHOP),
-                    Some(BLACK_QUEEN),
-                    Some(BLACK_KING),
-                    Some(BLACK_BISHOP),
-                    Some(BLACK_KNIGHT),
-                    Some(BLACK_KING_SIDE_ROOK),
-                ],
+                Some(WHITE_QUEEN_SIDE_ROOK),
+                Some(WHITE_KNIGHT),
+                Some(WHITE_BISHOP),
+                Some(WHITE_QUEEN),
+                Some(WHITE_KING),
+                Some(WHITE_BISHOP),
+                Some(WHITE_KNIGHT),
+                Some(WHITE_KING_SIDE_ROOK),
+                Some(WHITE_PAWN), Some(WHITE_PAWN), Some(WHITE_PAWN), Some(WHITE_PAWN),
+                Some(WHITE_PAWN), Some(WHITE_PAWN), Some(WHITE_PAWN), Some(WHITE_PAWN),
+                None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None,
+                None, None, None, None, None, None, None, None,
+                Some(BLACK_PAWN), Some(BLACK_PAWN), Some(BLACK_PAWN), Some(BLACK_PAWN),
+                Some(BLACK_PAWN), Some(BLACK_PAWN), Some(BLACK_PAWN), Some(BLACK_PAWN),
+                Some(BLACK_QUEEN_SIDE_ROOK),
+                Some(BLACK_KNIGHT),
+                Some(BLACK_BISHOP),
+                Some(BLACK_QUEEN),
+                Some(BLACK_KING),
+                Some(BLACK_BISHOP),
+                Some(BLACK_KNIGHT),
+                Some(BLACK_KING_SIDE_ROOK),
             ],
         }
     }
 
     pub fn empty() -> Board {
         Board {
-            state: [
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-            ],
+            state: [None; 64],
         }
     }
 
     pub fn get_all_figures_of_color(&self, color: Color) -> [Option<(Figure, Position)>; 16] {
         let mut figures: [Option<(Figure, Position)>; 16] = [None; 16];
         let mut next_index: usize = 0;
-        for row_index in USIZE_RANGE_07 {
-            let row = self.state[row_index];
-            for column_index in USIZE_RANGE_07 {
-                if let Some(figure) = row[column_index] {
-                    if figure.color == color {
-                        figures[next_index] = Some(
-                            (figure, Position {column: column_index as i8, row: row_index as i8,})
-                        );
-                        next_index = next_index + 1;
-                    }
+        for state_index in USIZE_RANGE_063 {
+            if let Some(figure) = self.state[state_index] {
+                if figure.color == color {
+                    figures[next_index] = Some(
+                        (figure, Position::unchecked_from_index(state_index))
+                    );
+                    next_index = next_index + 1;
                 }
             }
         }
@@ -99,21 +86,18 @@ impl Board {
         let mut next_white_index: usize = 0;
         let mut next_black_index: usize = 0;
 
-        for row_index in USIZE_RANGE_07 {
-            let row = self.state[row_index];
-            for column_index in USIZE_RANGE_07 {
-                if let Some(figure) = row[column_index] {
-                    if figure.color == Color::White {
-                        white_figures[next_white_index] = Some(
-                            (figure.fig_type, Position { column: column_index as i8, row: row_index as i8 })
-                        );
-                        next_white_index = next_white_index + 1;
-                    } else {
-                        black_figures[next_black_index] = Some(
-                            (figure.fig_type, Position { column: column_index as i8, row: row_index as i8 })
-                        );
-                        next_black_index = next_black_index + 1;
-                    }
+        for state_index in USIZE_RANGE_063 {
+            if let Some(figure) = self.state[state_index] {
+                if figure.color == Color::White {
+                    white_figures[next_white_index] = Some(
+                        (figure.fig_type, Position::unchecked_from_index(state_index))
+                    );
+                    next_white_index = next_white_index + 1;
+                } else {
+                    black_figures[next_black_index] = Some(
+                        (figure.fig_type, Position::unchecked_from_index(state_index))
+                    );
+                    next_black_index = next_black_index + 1;
                 }
             }
         }
@@ -121,7 +105,7 @@ impl Board {
     }
 
     pub fn get_figure(&self, pos: Position) -> Option<Figure> {
-        self.state[pos.row as usize][pos.column as usize]
+        self.state[pos.index]
     }
 
     pub fn set_figure(&mut self, pos: Position, opt_figure: Option<Figure>) {
@@ -129,7 +113,7 @@ impl Board {
         //     None => println!("clear figure on {}", pos),
         //     Some(figure) => println!("set figure {} on {}", figure, pos),
         // }
-        self.state[pos.row as usize][pos.column as usize] = opt_figure
+        self.state[pos.index] = opt_figure
     }
 
     pub fn is_empty(&self, pos: Position) -> bool {
@@ -151,9 +135,10 @@ impl Board {
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(f);
-        for row_index in (0..8).rev() {
-            let row: [Option<Figure>; 8] = self.state[row_index];
-            row.iter().for_each(|&fig_option| {
+        for row_index in I8_RANGE_07.rev() {
+            for column_index in I8_RANGE_07 {
+                let figure_index = Position::unchecked_new(column_index, row_index).index;
+                let fig_option = self.state[figure_index];
                 let symbol = match fig_option {
                     None => "_",
                     Some(figure) => {
@@ -186,12 +171,14 @@ impl Display for Board {
                     }
                 };
                 write!(f, "{}", symbol);
-            });
+            }
             writeln!(f, " {}", row_index + 1);
         }
         writeln!(f, "abcdefgh")
     }
 }
+
+pub const USIZE_RANGE_063: Range<usize> = 0..64;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FieldContent {

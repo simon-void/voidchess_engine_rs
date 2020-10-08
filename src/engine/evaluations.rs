@@ -1,9 +1,6 @@
 use std::cmp::Ordering;
 use crate::Move;
-use crate::base::EXPECTED_MAX_NUMBER_OF_MOVES;
-use tinyvec::TinyVec;
 use crate::game::StoppedReason;
-use crate::engine::evaluations::Evaluation::Draw;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Evaluation {

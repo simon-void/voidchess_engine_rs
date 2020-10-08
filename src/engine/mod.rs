@@ -1,8 +1,6 @@
-use tinyvec::*;
-use crate::base::{MoveArray, Moves};
+use crate::base::{Moves};
 use crate::game::Game;
-use crate::Move;
-use crate::engine::evaluations::{EvaluatedMove, Evaluation};
+use crate::engine::evaluations::*;
 use crate::engine::min_max::evaluate_move;
 
 pub(crate) mod evaluations;

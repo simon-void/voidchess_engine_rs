@@ -1,7 +1,6 @@
 mod functions;
 
 use std::fmt;
-use tinyvec::*;
 use crate::base::*;
 use crate::{Position, GameState};
 

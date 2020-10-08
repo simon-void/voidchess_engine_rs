@@ -3,23 +3,56 @@ use std::iter::{Iterator};
 use std::ops::Range;
 use std::str;
 use crate::base::Color;
-use crate::game::{Board, FieldContent};
+use crate::game::{Board, FieldContent, USIZE_RANGE_063};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Position {
     pub column: i8,
     pub row: i8,
+    pub index: usize,
 }
 
 impl Position {
-    pub fn safe_new(column: i8, row: i8) -> Option<Position> {
+    pub fn checked_new(column: i8, row: i8) -> Option<Position> {
         if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
             return None
         }
-        Some(Position {
+        Some(Position::unchecked_new(column, row))
+    }
+
+    pub fn unchecked_new(column: i8, row: i8) -> Position {
+        debug_assert!(
+            I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
+            "column and row were expected to be 0..64 but were column: {} and row: {}",
+            column, row
+        );
+        Position {
             column,
             row,
-        })
+            index: ((row*8)+column) as usize,
+        }
+    }
+
+    pub fn unchecked_from_index(index: usize) -> Position {
+        debug_assert!(
+            USIZE_RANGE_063.contains(&index),
+            "index was expected to be 0..64 but was {}",
+            index
+        );
+        let i = index as i8;
+        let column = i % 8;
+        let row = i/8;
+        debug_assert!(
+          I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
+          "column and row were expected to be 0..64 but were column: {} and row: {}",
+          column, row
+        );
+
+        Position {
+            column,
+            row,
+            index: ((row*8)+column) as usize,
+        }
     }
 
     pub fn get_row_distance(&self, other: Position) -> i8 {
@@ -30,24 +63,24 @@ impl Position {
         match direction {
             Direction::Up => {
                 let new_column = self.column + 1;
-                if new_column == 8 { None } else { Some(Position { column: new_column, row: self.row }) }
+                if new_column == 8 { None } else { Some(Position::unchecked_new(new_column, self.row)) }
             },
             Direction::Down => {
                 let new_column = self.column - 1;
-                if new_column == -1 { None } else { Some(Position { column: new_column, row: self.row }) }
+                if new_column == -1 { None } else { Some(Position::unchecked_new(new_column, self.row)) }
             },
             Direction::Right => {
                 let new_row = self.row + 1;
-                if new_row == 8 { None } else { Some(Position { column: self.column, row: new_row }) }
+                if new_row == 8 { None } else { Some(Position::unchecked_new(self.column, new_row)) }
             },
             Direction::Left => {
                 let new_row = self.row - 1;
-                if new_row == -1 { None } else { Some(Position { column: self.column, row: new_row }) }
+                if new_row == -1 { None } else { Some(Position::unchecked_new(self.column, new_row )) }
             },
-            Direction::UpRight => Position::safe_new(self.column + 1, self.row + 1),
-            Direction::DownRight => Position::safe_new(self.column - 1, self.row + 1),
-            Direction::DownLeft => Position::safe_new(self.column - 1, self.row - 1),
-            Direction::UpLeft => Position::safe_new(self.column + 1, self.row - 1),
+            Direction::UpRight => Position::checked_new(self.column + 1, self.row + 1),
+            Direction::DownRight => Position::checked_new(self.column - 1, self.row + 1),
+            Direction::DownLeft => Position::checked_new(self.column - 1, self.row - 1),
+            Direction::UpLeft => Position::checked_new(self.column + 1, self.row - 1),
         }
     }
 
@@ -56,7 +89,7 @@ impl Position {
         column_delta: i8,
         row_delta: i8,
     ) -> Option<Position> {
-        Position::safe_new(self.column + column_delta, self.row + row_delta)
+        Position::checked_new(self.column + column_delta, self.row + row_delta)
     }
 
     pub fn reachable_directed_positions<'a, 'b>(
@@ -118,10 +151,7 @@ impl str::FromStr for Position {
             panic!("illegal value for Position: {}", code);
         }
 
-        Ok(Position {
-            column,
-            row,
-        })
+        Ok(Position::unchecked_new(column, row))
     }
 }
 
@@ -270,4 +300,41 @@ pub static DIAGONAL_DIRECTIONS: [Direction; 4] = [
     Direction::UpRight, Direction::DownRight, Direction::DownLeft, Direction::UpLeft
 ];
 
-const I8_RANGE_07: Range<i8> = 0..8;
+pub const I8_RANGE_07: Range<i8> = 0..8;
+
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    #[rstest(
+    column, row, expected_index,
+    case(0, 0, 0),
+    case(7, 7, 63),
+    case(1, 0, 1),
+    case(0, 1, 8),
+    ::trace //This attribute enable traceing
+    )]
+    fn test_position_unchecked_new(column: i8, row: i8, expected_index: usize) {
+        let pos = Position::unchecked_new(column, row);
+        assert_eq!(pos.index, expected_index);
+    }
+
+    #[rstest(
+    pos_str, expected_column, expected_row, expected_index,
+    case("a1", 0, 0, 0),
+    case("h8", 7, 7, 63),
+    case("b1", 1, 0, 1),
+    case("a2", 0, 1, 8),
+    ::trace //This attribute enable traceing
+    )]
+    fn test_position_from_str(pos_str: &str, expected_column: i8, expected_row: i8, expected_index: usize) {
+        let pos = pos_str.parse::<Position>().unwrap();
+        assert_eq!(pos.column, expected_column);
+        assert_eq!(pos.row, expected_row);
+        assert_eq!(pos.index, expected_index);
+    }
+}

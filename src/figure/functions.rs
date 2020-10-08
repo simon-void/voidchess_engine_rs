@@ -1,8 +1,7 @@
-use tinyvec::*;
 use crate::figure::{FigureType};
 use crate::{Position, Move, GameState};
 use crate::game::{Board, FieldContent};
-use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, MoveArray, Moves};
+use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, Moves};
 
 pub fn for_reachable_moves(
     fig_type: FigureType,
@@ -245,6 +244,7 @@ fn check_if_king_side_castling_possible(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tinyvec::*;
 
     #[test]
     fn testing_works() {

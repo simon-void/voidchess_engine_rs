@@ -3,8 +3,10 @@ name = "voidchess_engine_rs"
 version = "0.0.1"
 authors = ["StephanS <simon.void+github@gmail.com>"]
 edition = "2018"
+rust = "1.47"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+rstest = "0.6.4"
 tinyvec  = { version = "1.0.1", features = ["alloc"] }
