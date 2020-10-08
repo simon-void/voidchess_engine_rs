@@ -6,6 +6,7 @@ pub use crate::game::board::*;
 use crate::{Move, Position};
 use tinyvec::TinyVec;
 use crate::base::{Moves};
+use crate::engine::evaluations::DrawReason;
 
 #[derive(Clone, Debug)]
 pub struct Game {
@@ -35,7 +36,7 @@ impl Game {
         }
     }
 
-    pub fn play(&self, a_move: Move) -> Game {
+    pub fn play(&self, a_move: &Move) -> (Game, MoveResult) {
         todo!();
     }
 
@@ -46,4 +47,18 @@ impl Game {
     pub fn can_passive_players_king_be_caught(&self) -> bool {
         todo!();
     }
+}
+
+pub enum MoveResult {
+    /*
+     * bool: was figure taken
+     */
+    Ongoing(bool),
+    Stopped(StoppedReason),
+}
+
+pub enum StoppedReason {
+    InsufficientMaterial,
+    ThreeTimesRepetition,
+    NoChangeIn50Moves,
 }

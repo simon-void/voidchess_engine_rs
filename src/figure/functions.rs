@@ -4,26 +4,6 @@ use crate::{Position, Move, GameState};
 use crate::game::{Board, FieldContent};
 use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, MoveArray, Moves};
 
-#[cfg(test)]
-// mod tests {
-//     use tinyvec::*;
-//     use crate::*;
-//     use crate::game::*;
-//     use crate::base::*;
-
-    #[test]
-    fn testing_works() {
-        let mut move_collection: Moves = tiny_vec!();
-        for_reachable_knight_moves(
-            Color::White,
-            "b1".parse::<Position>().unwrap(),
-            &Board::classic(),
-            &mut move_collection,
-        );
-        assert_eq!(move_collection.len(), 2);
-    }
-// }
-
 pub fn for_reachable_moves(
     fig_type: FigureType,
     pos: Position,
@@ -257,4 +237,24 @@ fn check_if_king_side_castling_possible(
     board: &Board,
 ) -> Option<Position> {
     None
+}
+
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn testing_works() {
+        let mut move_collection: Moves = tiny_vec!();
+        for_reachable_knight_moves(
+            Color::White,
+            "b1".parse::<Position>().unwrap(),
+            &Board::classic(),
+            &mut move_collection,
+        );
+        assert_eq!(move_collection.len(), 2);
+    }
 }

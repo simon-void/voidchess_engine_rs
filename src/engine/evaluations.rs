@@ -2,13 +2,15 @@ use std::cmp::Ordering;
 use crate::Move;
 use crate::base::EXPECTED_MAX_NUMBER_OF_MOVES;
 use tinyvec::TinyVec;
+use crate::game::StoppedReason;
+use crate::engine::evaluations::Evaluation::Draw;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Evaluation {
-    WinIn(u8),
+    WinIn(usize),
     Numeric(f64),
     Draw(DrawReason),
-    LooseIn(u8),
+    LooseIn(usize),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -17,6 +19,16 @@ pub enum DrawReason {
     InsufficientMaterial,
     ThreeTimesRepetition,
     NoChangeIn50Moves,
+}
+
+impl DrawReason {
+    pub fn from(reason: StoppedReason) -> DrawReason {
+        match reason {
+            StoppedReason::InsufficientMaterial => DrawReason::InsufficientMaterial,
+            StoppedReason::ThreeTimesRepetition => DrawReason::ThreeTimesRepetition,
+            StoppedReason::NoChangeIn50Moves => DrawReason::ThreeTimesRepetition,
+        }
+    }
 }
 
 impl PartialOrd for Evaluation {
