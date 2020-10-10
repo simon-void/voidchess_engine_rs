@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
-use crate::Move;
 use crate::game::StoppedReason;
+use crate::base::Move;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Evaluation {

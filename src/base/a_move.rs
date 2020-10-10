@@ -22,13 +22,13 @@ impl Move {
 }
 
 impl str::FromStr for Move {
-    type Err = ();
+    type Err = ChessError;
 
     fn from_str(code: &str) -> Result<Self, Self::Err> {
         Ok(Move {
-            from: Position::from_str(&code[0..2]).unwrap(),
-            to: Position::from_str(&code[3..5]).unwrap(),
-            pawn_promo: PawnPromotion::from_str(&code[2..3]).unwrap()
+            from: code[0..2].parse::<Position>()?,
+            pawn_promo: code[2..3].parse::<PawnPromotion>()?,
+            to: code[3..5].parse::<Position>()?,
         })
     }
 }
@@ -104,7 +104,7 @@ impl str::FromStr for PawnPromotion {
             "B" => Ok(PawnPromotion::Yes(PromotionType::Bishop)),
             _ => Err(ChessError{
                 msg: format!("unknown pawn promotion type: {}. Only QRKB are allowed.", s),
-                kind: ErrorKind::IllegalMoveFormat
+                kind: ErrorKind::IllegalFormat
             }),
         }
     }

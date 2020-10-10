@@ -2,7 +2,8 @@ mod functions;
 
 use std::fmt;
 use crate::base::*;
-use crate::{Position, GameState};
+use std::str;
+use crate::game::GameState;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Figure {
@@ -16,16 +17,73 @@ impl Figure {
     }
 }
 
+impl str::FromStr for Figure {
+    type Err = ChessError;
+
+    fn from_str(desc: &str) -> Result<Self, Self::Err> {
+        if desc.len()!=1 {
+            return Err(ChessError{
+                msg: format!("only a single character like ♙ expected but got {}", desc),
+                kind: ErrorKind::IllegalFormat,
+            })
+        }
+        match desc {
+            "♙" => Ok(Figure{fig_type: FigureType::Pawn, color: Color::White}),
+            "♟" => Ok(Figure{fig_type: FigureType::Pawn, color: Color::Black}),
+            "♖" => Ok(Figure{fig_type: FigureType::Rook(RookType::Promoted), color: Color::White}),
+            "♜" => Ok(Figure{fig_type: FigureType::Rook(RookType::Promoted), color: Color::Black}),
+            "♘" => Ok(Figure { fig_type: FigureType::Knight, color: Color::White }),
+            "♞" => Ok(Figure { fig_type: FigureType::Knight, color: Color::Black }),
+            "♗" => Ok(Figure { fig_type: FigureType::Bishop, color: Color::White }),
+            "♝" => Ok(Figure { fig_type: FigureType::Bishop, color: Color::Black }),
+            "♕" => Ok(Figure { fig_type: FigureType::Queen, color: Color::White }),
+            "♛" => Ok(Figure { fig_type: FigureType::Queen, color: Color::Black }),
+            "♔" => Ok(Figure { fig_type: FigureType::King, color: Color::White }),
+            "♚" => Ok(Figure { fig_type: FigureType::King, color: Color::Black }),
+            _ => Err(ChessError{
+                msg: format!("unexpected character, utf-chess symbol like ♙ expected but got {}", desc),
+                kind: ErrorKind::IllegalFormat,
+            })
+        }
+    }
+}
+
 impl fmt::Display for Figure {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.fig_type {
-            FigureType::Pawn => write!(f, "{}-Pawn", self.color),
-            FigureType::Rook(_) => write!(f, "{}-Rook", self.color),
-            FigureType::Knight => write!(f, "{}-Knight", self.color),
-            FigureType::Bishop => write!(f, "{}-Bishop", self.color),
-            FigureType::Queen => write!(f, "{}-Queen", self.color),
-            FigureType::King => write!(f, "{}-King", self.color),
+        let symbol = match self.fig_type {
+            FigureType::Pawn => {if self.color==Color::White {"♙"} else {"♟"}}
+            FigureType::Rook(_) => {if self.color==Color::White {"♖"} else {"♜"}}
+            FigureType::Knight => {if self.color==Color::White {"♘"} else {"♞"}}
+            FigureType::Bishop => {if self.color==Color::White {"♗"} else {"♝"}}
+            FigureType::Queen => {if self.color==Color::White {"♕"} else {"♛"}}
+            FigureType::King => {if self.color==Color::White {"♔"} else {"♚"}}
+        };
+        write!(f,"{}", symbol)
+    }
+}
+
+pub struct FigureAndPosition {
+    pub figure: Figure,
+    pub pos: Position,
+}
+
+impl str::FromStr for FigureAndPosition {
+    type Err = ChessError;
+
+    fn from_str(desc: &str) -> Result<Self, Self::Err> {
+        if desc.len()!=3 {
+            return Err(ChessError{
+                msg: format!("three characters like {}", desc),
+                kind: ErrorKind::IllegalFormat,
+            })
         }
+        let figure = desc[0..1].parse::<Figure>()?;
+        let pos = desc[1..3].parse::<Position>()?;
+
+        Ok(FigureAndPosition{
+            figure,
+            pos,
+        })
     }
 }
 

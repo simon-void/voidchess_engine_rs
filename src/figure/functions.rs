@@ -1,7 +1,6 @@
 use crate::figure::{FigureType};
-use crate::{Position, Move, GameState};
-use crate::game::{Board, FieldContent};
-use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, Moves};
+use crate::game::{Board, FieldContent, GameState};
+use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, Moves, Position, Move};
 
 pub fn for_reachable_moves(
     fig_type: FigureType,

@@ -146,15 +146,14 @@ impl str::FromStr for Position {
         if char_iter.next().is_some()  {
             return Err(ChessError{
                 msg: format!("only 2 chars expected for Position: {}", code),
-                kind: ErrorKind::IllegalPositionFormat
+                kind: ErrorKind::IllegalFormat
             });
         }
-        let s = format!();
 
         if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
             return Err(ChessError{
                 msg: format!("illegal value for Position: {}", code),
-                kind: ErrorKind::IllegalPositionFormat
+                kind: ErrorKind::IllegalFormat
             });
         }
 

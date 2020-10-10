@@ -1,6 +1,6 @@
-use crate::{GameState, Position};
-use crate::base::{Color, Direction};
+use crate::base::{Color, Direction, Position};
 use crate::figure::FigureType;
+use crate::game::GameState;
 
 pub fn default_static_eval_for_white(game_state: &GameState) -> f64 {
     let (white_figures, black_figures) = game_state.board.get_white_and_black_figures();

@@ -4,7 +4,7 @@ pub struct ChessError {
 }
 
 pub enum ErrorKind {
-    IllegalPositionFormat,
-    IllegalMoveFormat,
+    IllegalConfiguration,
+    IllegalFormat,
     IllegalMove,
 }

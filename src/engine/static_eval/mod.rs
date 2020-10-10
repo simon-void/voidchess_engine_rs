@@ -1,7 +1,7 @@
-use crate::GameState;
 use crate::engine::evaluations::Evaluation;
 use crate::engine::static_eval::default::default_static_eval_for_white;
 use crate::base::Color;
+use crate::game::GameState;
 
 mod default;
 

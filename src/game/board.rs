@@ -1,7 +1,6 @@
 use crate::figure::{Figure, FigureType, RookType};
-use crate::base::{Color};
+use crate::base::{Color, Position};
 use crate::base::I8_RANGE_07;
-use crate::Position;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
 
@@ -139,38 +138,10 @@ impl Display for Board {
             for column_index in I8_RANGE_07 {
                 let figure_index = Position::unchecked_new(column_index, row_index).index;
                 let fig_option = self.state[figure_index];
-                let symbol = match fig_option {
-                    None => "_",
-                    Some(figure) => {
-                        match figure.fig_type {
-                            FigureType::Pawn => match figure.color {
-                                Color::White => "♙",
-                                Color::Black => "♟",
-                            },
-                            FigureType::Rook(_) => match figure.color {
-                                Color::White => "♖",
-                                Color::Black => "♜",
-                            },
-                            FigureType::Knight => match figure.color {
-                                Color::White => "♘",
-                                Color::Black => "♞",
-                            },
-                            FigureType::Bishop => match figure.color {
-                                Color::White => "♗",
-                                Color::Black => "♝",
-                            },
-                            FigureType::Queen => match figure.color {
-                                Color::White => "♕",
-                                Color::Black => "♛",
-                            },
-                            FigureType::King => match figure.color {
-                                Color::White => "♔",
-                                Color::Black => "♚",
-                            },
-                        }
-                    }
+                match fig_option {
+                    None => write!(f, "_"),
+                    Some(figure) => write!(f, "{}", figure),
                 };
-                write!(f, "{}", symbol);
             }
             writeln!(f, " {}", row_index + 1);
         }

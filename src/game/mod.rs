@@ -3,8 +3,9 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::{Move};
-use crate::base::{Moves};
+use crate::base::{Moves, ChessError, ErrorKind, Move};
+use std::iter::Peekable;
+use std::{str, fmt};
 
 #[derive(Clone, Debug)]
 pub struct Game {
@@ -18,14 +19,6 @@ impl Game {
         Game::from(latest_state)
     }
 
-    pub fn classic_and_then(moves_so_far: Moves) -> Game {
-        let latest_state = GameState::classic();
-        for past_move in moves_so_far.iter() {
-            latest_state.do_move(*past_move);
-        }
-        Game::from(latest_state)
-    }
-
     pub fn from(game_state: GameState) -> Game {
         let latest_reachable_moves = game_state.get_reachable_moves();
         Game {
@@ -34,8 +27,11 @@ impl Game {
         }
     }
 
-    pub fn play(&self, a_move: &Move) -> (Game, MoveResult) {
-        todo!();
+    pub fn play(&self, a_move: &Move) -> MoveResult {
+        let new_game_state = self.latest_state.do_move(*a_move);
+        let new_game = Game::from(new_game_state);
+        let move_result = MoveResult::Ongoing(new_game, false); //TODO don't hardcode Ongoing and don't hardcode false(=no figure hit)!
+        move_result
     }
 
     pub fn get_reachable_moves(&self) -> &Moves {
@@ -47,19 +43,60 @@ impl Game {
     }
 }
 
+impl fmt::Display for Game {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.latest_state)
+    }
+}
+
 impl str::FromStr for Game {
-    type Err = ();
+    type Err = ChessError;
 
     fn from_str(desc: &str) -> Result<Self, Self::Err> {
+        let trimmed_desc = desc.trim();
+        if trimmed_desc.is_empty() {
+            return Ok(Game::classic())
+        }
+        let mut token_iter = trimmed_desc.split(" ").into_iter().peekable();
+        let first_token = *token_iter.peek().unwrap();
 
+        if first_token=="white" || first_token=="black" {
+            game_by_figures_on_board(token_iter)
+        } else {
+            game_by_moves_from_start(token_iter)
+        }
     }
+}
+
+fn game_by_moves_from_start(token_iter: Peekable<str::Split<&str>>) -> Result<Game, ChessError> {
+    let mut game = Game::classic();
+    for token in token_iter {
+        let a_move = token.parse::<Move>()?;
+        let move_result = game.play(&a_move);
+        match move_result {
+            MoveResult::Ongoing(new_game, _) => {
+                game = new_game;
+            }
+            MoveResult::Stopped(reason) => {
+                return Err(ChessError {
+                    msg: format!("game has already ended after move {} in final state {}", a_move, game),
+                    kind: ErrorKind::IllegalConfiguration,
+                });
+            }
+        }
+    }
+    Ok(game)
+}
+
+fn game_by_figures_on_board(token_iter: Peekable<str::Split<&str>>) -> Result<Game, ChessError> {
+    todo!()
 }
 
 pub enum MoveResult {
     /*
      * bool: was figure taken
      */
-    Ongoing(bool),
+    Ongoing(Game, bool),
     Stopped(StoppedReason),
 }
 

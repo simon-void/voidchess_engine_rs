@@ -1,8 +1,8 @@
 use crate::base::{Color, Position, Move, PawnPromotion, Moves};
 use crate::figure::{Figure, FigureType, RookType};
-use std::fmt::{Display, Formatter, Result};
 use crate::game::Board;
 use tinyvec::*;
+use std::fmt;
 
 #[derive(Clone, Debug)]
 pub struct GameState {
@@ -22,8 +22,8 @@ impl GameState {
         GameState {
             board: Board::classic(),
             turn_by: Color::White,
-            white_king_pos: "e1".parse::<Position>().unwrap(),
-            black_king_pos: "e8".parse::<Position>().unwrap(),
+            white_king_pos: "e1".parse::<Position>().ok().unwrap(),
+            black_king_pos: "e8".parse::<Position>().ok().unwrap(),
             en_passant_intercept_pos: None,
             is_white_queen_side_castling_possible: true,
             is_white_king_side_castling_possible: true,
@@ -287,8 +287,8 @@ enum PawnMoveType {
     SingleStep, DoubleStep, EnPassantIntercept,
 }
 
-impl Display for GameState {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.board)
     }
 }

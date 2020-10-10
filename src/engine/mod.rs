@@ -7,8 +7,7 @@ pub(crate) mod evaluations;
 mod min_max;
 mod static_eval;
 
-pub fn evaluate_position_after(moves_so_far: Moves) -> Vec<EvaluatedMove> {
-    let game = Game::classic_and_then(moves_so_far);
+pub fn evaluate(game: Game) -> Vec<EvaluatedMove> {
     let mut results: Vec<EvaluatedMove> = vec![];
     for next_move in game.get_reachable_moves().iter() {
         let eval = evaluate_move(&game, next_move);
