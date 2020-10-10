@@ -1,7 +1,9 @@
-mod position;
 mod a_move;
+mod errors;
+mod position;
 
 pub use a_move::*;
+pub use errors::*;
 pub use position::*;
 use std::fmt;
 

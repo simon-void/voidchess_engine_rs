@@ -2,6 +2,7 @@ use std::fmt;
 use std::str;
 use crate::base::position::Position;
 use tinyvec::TinyVec;
+use crate::base::{ChessError, ErrorKind};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Move {
@@ -92,7 +93,7 @@ pub enum PawnPromotion {
 }
 
 impl str::FromStr for PawnPromotion {
-    type Err = ();
+    type Err = ChessError;
 
     fn from_str(s: &str) -> Result<PawnPromotion, Self::Err> {
         match s {
@@ -101,7 +102,10 @@ impl str::FromStr for PawnPromotion {
             "R" => Ok(PawnPromotion::Yes(PromotionType::Rook)),
             "K" => Ok(PawnPromotion::Yes(PromotionType::Knight)),
             "B" => Ok(PawnPromotion::Yes(PromotionType::Bishop)),
-            _ => panic!("unknown pawn promotion type"),
+            _ => Err(ChessError{
+                msg: format!("unknown pawn promotion type: {}. Only QRKB are allowed.", s),
+                kind: ErrorKind::IllegalMoveFormat
+            }),
         }
     }
 }

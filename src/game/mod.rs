@@ -47,6 +47,14 @@ impl Game {
     }
 }
 
+impl str::FromStr for Game {
+    type Err = ();
+
+    fn from_str(desc: &str) -> Result<Self, Self::Err> {
+
+    }
+}
+
 pub enum MoveResult {
     /*
      * bool: was figure taken

@@ -2,7 +2,7 @@ use std::fmt;
 use std::iter::{Iterator};
 use std::ops::Range;
 use std::str;
-use crate::base::Color;
+use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -137,18 +137,25 @@ impl Position {
 }
 
 impl str::FromStr for Position {
-    type Err = ();
+    type Err = ChessError;
 
     fn from_str(code: &str) -> Result<Self, Self::Err> {
         let mut char_iter = code.chars();
         let column = ((char_iter.next().unwrap() as u8) - 97) as i8;
         let row = ((char_iter.next().unwrap() as u8) - 49) as i8;
         if char_iter.next().is_some()  {
-            panic!("only 2 chars expected for Position: {}", code)
+            return Err(ChessError{
+                msg: format!("only 2 chars expected for Position: {}", code),
+                kind: ErrorKind::IllegalPositionFormat
+            });
         }
+        let s = format!();
 
         if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
-            panic!("illegal value for Position: {}", code);
+            return Err(ChessError{
+                msg: format!("illegal value for Position: {}", code),
+                kind: ErrorKind::IllegalPositionFormat
+            });
         }
 
         Ok(Position::unchecked_new(column, row))
