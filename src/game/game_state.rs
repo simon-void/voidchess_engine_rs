@@ -1,5 +1,5 @@
-use crate::base::{Color, Position, Move, PawnPromotion, Moves};
-use crate::figure::{Figure, FigureType, RookType};
+use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind};
+use crate::figure::{Figure, FigureType, RookType, FigureAndPosition};
 use crate::game::Board;
 use tinyvec::*;
 use std::fmt;
@@ -30,6 +30,97 @@ impl GameState {
             is_black_queen_side_castling_possible: true,
             is_black_king_side_castling_possible: true,
         }
+    }
+
+
+    pub fn from_manual_config(turn_by: Color, positioned_figures: Vec<FigureAndPosition>) -> Result<GameState, ChessError> {
+        let mut board = Board::empty();
+        let mut opt_white_king_pos: Option<Position> = None;
+        let mut opt_black_king_pos: Option<Position> = None;
+
+        for figure_and_pos in positioned_figures {
+            let field_was_already_in_use = board.set_figure(figure_and_pos.pos, figure_and_pos.figure);
+            if field_was_already_in_use {
+                return Err(ChessError{
+                    msg: format!("multiple figures placed on {}", figure_and_pos.pos),
+                    kind: ErrorKind::IllegalConfiguration
+                })
+            }
+            match figure_and_pos.figure.fig_type {
+                FigureType::Pawn => {
+                    let pawn_pos_row = figure_and_pos.pos.row;
+                    if pawn_pos_row==0 || pawn_pos_row==7 {
+                        return Err(ChessError{
+                            msg: format!("can't place a pawn on {}", figure_and_pos.pos),
+                            kind: ErrorKind::IllegalConfiguration
+                        })
+                    }
+                },
+                FigureType::King => {
+                    match figure_and_pos.figure.color {
+                        Color::White => {
+                            if opt_white_king_pos.is_some() {
+                                return Err(ChessError{
+                                    msg: format!("can't place a pawn on {}. That row isn't reachable for a pawn.", figure_and_pos.pos),
+                                    kind: ErrorKind::IllegalConfiguration
+                                })
+                            }
+                            opt_white_king_pos = Some(figure_and_pos.pos);
+                        },
+                        Color::Black => {
+                            if opt_black_king_pos.is_some() {
+                                return Err(ChessError{
+                                    msg: format!("can't place a pawn on {}. That row isn't reachable for a pawn.", figure_and_pos.pos),
+                                    kind: ErrorKind::IllegalConfiguration
+                                })
+                            }
+                            opt_black_king_pos = Some(figure_and_pos.pos);
+                        },
+                    }
+                },
+                _ => {},
+            };
+        }
+
+        let white_king_pos = match opt_white_king_pos {
+            Some(pos) => pos,
+            None => {
+                return Err(ChessError{
+                    msg: format!("no white king configured"),
+                    kind: ErrorKind::IllegalConfiguration
+                })
+            },
+        };
+        let black_king_pos = match opt_black_king_pos {
+            Some(pos) => pos,
+            None => {
+                return Err(ChessError{
+                    msg: format!("no white king configured"),
+                    kind: ErrorKind::IllegalConfiguration
+                })
+            },
+        };
+
+        let game_state = GameState {
+            board,
+            turn_by,
+            white_king_pos,
+            black_king_pos,
+            en_passant_intercept_pos: None,
+            is_white_queen_side_castling_possible: false,
+            is_white_king_side_castling_possible: false,
+            is_black_queen_side_castling_possible: false,
+            is_black_king_side_castling_possible: false,
+        };
+
+        if game_state.can_passive_players_king_be_caught() {
+            return Err(ChessError{
+                msg: format!("passive king is in check {}", game_state.board),
+                kind: ErrorKind::IllegalConfiguration
+            })
+        }
+
+        Ok(game_state)
     }
 
     pub fn get_reachable_moves(&self) -> Moves {
@@ -227,15 +318,20 @@ impl GameState {
             Color::Black => self.white_king_pos,
         }
     }
+
+    pub fn can_passive_players_king_be_caught(&self) -> bool {
+        //TODO
+        false
+    }
 }
 
 fn do_normal_move(
     new_board: &mut Board,
     next_move: Move,
-) {
-    let moving_figure: Option<Figure> = new_board.get_figure(next_move.from);
-    new_board.set_figure(next_move.from, None);
-    new_board.set_figure(next_move.to, moving_figure);
+) -> bool {
+    let moving_figure: Figure = new_board.get_figure(next_move.from).expect("field the figure moves from is empty");
+    new_board.clear_field(next_move.from);
+    new_board.set_figure(next_move.to, moving_figure)
 }
 
 /**
@@ -280,7 +376,7 @@ fn do_en_passant_move(
     do_normal_move(new_board, next_move);
     let double_stepped_pawn_pos =
         Position::unchecked_new(next_move.to.column, next_move.from.row);
-    new_board.set_figure(double_stepped_pawn_pos, None)
+    new_board.clear_field(double_stepped_pawn_pos)
 }
 
 enum PawnMoveType {
@@ -289,6 +385,7 @@ enum PawnMoveType {
 
 impl fmt::Display for GameState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}'s turn", self.turn_by);
         writeln!(f, "{}", self.board)
     }
 }

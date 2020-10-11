@@ -21,12 +21,6 @@ impl str::FromStr for Figure {
     type Err = ChessError;
 
     fn from_str(desc: &str) -> Result<Self, Self::Err> {
-        if desc.len()!=1 {
-            return Err(ChessError{
-                msg: format!("only a single character like ♙ expected but got {}", desc),
-                kind: ErrorKind::IllegalFormat,
-            })
-        }
         match desc {
             "♙" => Ok(Figure{fig_type: FigureType::Pawn, color: Color::White}),
             "♟" => Ok(Figure{fig_type: FigureType::Pawn, color: Color::Black}),
@@ -71,14 +65,15 @@ impl str::FromStr for FigureAndPosition {
     type Err = ChessError;
 
     fn from_str(desc: &str) -> Result<Self, Self::Err> {
-        if desc.len()!=3 {
+        if desc.chars().count()!=3 {
             return Err(ChessError{
-                msg: format!("three characters like {}", desc),
+                msg: format!("FigureAndPosition.from_str: expected three characters like \"♔e1\" but found \"{}\"", desc),
                 kind: ErrorKind::IllegalFormat,
             })
         }
-        let figure = desc[0..1].parse::<Figure>()?;
-        let pos = desc[1..3].parse::<Position>()?;
+        let split_point = desc.len()-2; // splitting is a bit more complicated since utf-8 chars like ♔ take more space than 1 byte
+        let figure = desc[..split_point].parse::<Figure>()?;
+        let pos = desc[split_point..].parse::<Position>()?;
 
         Ok(FigureAndPosition{
             figure,

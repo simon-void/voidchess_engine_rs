@@ -3,9 +3,10 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::base::{Moves, ChessError, ErrorKind, Move};
+use crate::base::{Moves, ChessError, ErrorKind, Move, Color};
 use std::iter::Peekable;
 use std::{str, fmt};
+use crate::figure::FigureAndPosition;
 
 #[derive(Clone, Debug)]
 pub struct Game {
@@ -39,7 +40,7 @@ impl Game {
     }
 
     pub fn can_passive_players_king_be_caught(&self) -> bool {
-        todo!();
+        self.latest_state.can_passive_players_king_be_caught()
     }
 }
 
@@ -57,10 +58,10 @@ impl str::FromStr for Game {
         if trimmed_desc.is_empty() {
             return Ok(Game::classic())
         }
-        let mut token_iter = trimmed_desc.split(" ").into_iter().peekable();
-        let first_token = *token_iter.peek().unwrap();
+        let mut token_iter = trimmed_desc.split(" ").into_iter();
 
-        if first_token=="white" || first_token=="black" {
+        let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
+        if desc_contains_figures {
             game_by_figures_on_board(token_iter)
         } else {
             game_by_moves_from_start(token_iter)
@@ -68,7 +69,7 @@ impl str::FromStr for Game {
     }
 }
 
-fn game_by_moves_from_start(token_iter: Peekable<str::Split<&str>>) -> Result<Game, ChessError> {
+fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessError> {
     let mut game = Game::classic();
     for token in token_iter {
         let a_move = token.parse::<Move>()?;
@@ -81,15 +82,35 @@ fn game_by_moves_from_start(token_iter: Peekable<str::Split<&str>>) -> Result<Ga
                 return Err(ChessError {
                     msg: format!("game has already ended after move {} in final state {}", a_move, game),
                     kind: ErrorKind::IllegalConfiguration,
-                });
+                })
             }
         }
     }
     Ok(game)
 }
 
-fn game_by_figures_on_board(token_iter: Peekable<str::Split<&str>>) -> Result<Game, ChessError> {
-    todo!()
+fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<Game, ChessError> {
+    let first_token = token_iter.next().unwrap();
+    let turn_by = match first_token {
+        "white" => Color::White,
+        "black" => Color::Black,
+        _ => {
+            return Err(ChessError {
+                msg: format!("the first token has to be either 'white' or 'black' but was {}", first_token),
+                kind: ErrorKind::IllegalConfiguration,
+            })
+        },
+    };
+
+    let mut positioned_figures: Vec<FigureAndPosition> = vec![];
+
+    for token in token_iter {
+        let figure_and_pos = token.parse::<FigureAndPosition>()?;
+        positioned_figures.push(figure_and_pos);
+    }
+
+    let game_state = GameState::from_manual_config(turn_by, positioned_figures)?;
+    Ok(Game::from(game_state))
 }
 
 pub enum MoveResult {

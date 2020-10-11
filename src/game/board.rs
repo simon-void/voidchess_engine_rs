@@ -107,12 +107,21 @@ impl Board {
         self.state[pos.index]
     }
 
-    pub fn set_figure(&mut self, pos: Position, opt_figure: Option<Figure>) {
+    /**
+    * returns if a figure was caught/replaced on that position
+    */
+    pub fn set_figure(&mut self, pos: Position, figure: Figure) -> bool {
         // match opt_figure {
         //     None => println!("clear figure on {}", pos),
         //     Some(figure) => println!("set figure {} on {}", figure, pos),
         // }
-        self.state[pos.index] = opt_figure
+        let old_content = self.state[pos.index];
+        self.state[pos.index] = Some(figure);
+        old_content.is_some()
+    }
+
+    pub fn clear_field(&mut self, pos: Position) {
+        self.state[pos.index] = None;
     }
 
     pub fn is_empty(&self, pos: Position) -> bool {
