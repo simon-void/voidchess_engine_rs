@@ -307,7 +307,7 @@ impl GameState {
                         do_normal_move(&mut new_board, next_move);
                         (
                             self.white_king_pos, self.black_king_pos,
-                            Some(Position::unchecked_new(
+                            Some(Position::new_unchecked(
                                 next_move.to.column,
                                 (next_move.from.row + next_move.to.row) / 2,
                             )),
@@ -379,11 +379,11 @@ fn do_castling_move(
     let king_to: Position;
     let rook_to: Position;
     if is_king_side_castling {
-        king_to = Position::unchecked_new(6, castling_row);
-        rook_to = Position::unchecked_new(5, castling_row)
+        king_to = Position::new_unchecked(6, castling_row);
+        rook_to = Position::new_unchecked(5, castling_row)
     } else {
-        king_to = Position::unchecked_new(2, castling_row);
-        rook_to = Position::unchecked_new(3, castling_row)
+        king_to = Position::new_unchecked(2, castling_row);
+        rook_to = Position::new_unchecked(3, castling_row)
     }
     // move the king
     // (this simplified approach only works in classical chess, not in all chess960 positions)
@@ -408,7 +408,7 @@ fn do_en_passant_move(
 ) {
     do_normal_move(new_board, next_move);
     let double_stepped_pawn_pos =
-        Position::unchecked_new(next_move.to.column, next_move.from.row);
+        Position::new_unchecked(next_move.to.column, next_move.from.row);
     new_board.clear_field(double_stepped_pawn_pos)
 }
 
@@ -423,9 +423,9 @@ impl fmt::Display for GameState {
     }
 }
 
-static WHITE_KING_STARTING_POS: Position = Position::unchecked_new(4, 0);
-static WHITE_KING_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(7, 0);
-static WHITE_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(0, 0);
-static BLACK_KING_STARTING_POS: Position = Position::unchecked_new(4, 7);
-static BLACK_KING_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(7, 7);
-static BLACK_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(0, 7);
+static WHITE_KING_STARTING_POS: Position = Position::new_unchecked(4, 0);
+static WHITE_KING_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(7, 0);
+static WHITE_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(0, 0);
+static BLACK_KING_STARTING_POS: Position = Position::new_unchecked(4, 7);
+static BLACK_KING_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(7, 7);
+static BLACK_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(0, 7);

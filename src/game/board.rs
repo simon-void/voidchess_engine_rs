@@ -70,7 +70,7 @@ impl Board {
             if let Some(figure) = self.state[state_index] {
                 if figure.color == color {
                     figures[next_index] = Some(
-                        (figure, Position::unchecked_from_index(state_index))
+                        (figure, Position::from_index_unchecked(state_index))
                     );
                     next_index = next_index + 1;
                 }
@@ -89,12 +89,12 @@ impl Board {
             if let Some(figure) = self.state[state_index] {
                 if figure.color == Color::White {
                     white_figures[next_white_index] = Some(
-                        (figure.fig_type, Position::unchecked_from_index(state_index))
+                        (figure.fig_type, Position::from_index_unchecked(state_index))
                     );
                     next_white_index = next_white_index + 1;
                 } else {
                     black_figures[next_black_index] = Some(
-                        (figure.fig_type, Position::unchecked_from_index(state_index))
+                        (figure.fig_type, Position::from_index_unchecked(state_index))
                     );
                     next_black_index = next_black_index + 1;
                 }
@@ -145,7 +145,7 @@ impl Display for Board {
         writeln!(f);
         for row_index in I8_RANGE_07.rev() {
             for column_index in I8_RANGE_07 {
-                let figure_index = Position::unchecked_new(column_index, row_index).index;
+                let figure_index = Position::new_unchecked(column_index, row_index).index;
                 let fig_option = self.state[figure_index];
                 match fig_option {
                     None => write!(f, "_"),

@@ -43,8 +43,8 @@ impl fmt::Display for Move {
 impl Default for Move {
     fn default() -> Self {
         Move {
-            from: Position::unchecked_new(1, 2),
-            to: Position::unchecked_new(6, 5),
+            from: Position::new_unchecked(1, 2),
+            to: Position::new_unchecked(6, 5),
             pawn_promo: PawnPromotion::Yes(PromotionType::Bishop)
         }
     }

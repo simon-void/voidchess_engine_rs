@@ -4,6 +4,7 @@ use std::ops::Range;
 use std::str;
 use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
+use crate::figure::FigureType;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Position {
@@ -13,14 +14,14 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn checked_new(column: i8, row: i8) -> Option<Position> {
+    pub fn new_checked(column: i8, row: i8) -> Option<Position> {
         if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
             return None
         }
-        Some(Position::unchecked_new(column, row))
+        Some(Position::new_unchecked(column, row))
     }
 
-    pub const fn unchecked_new(column: i8, row: i8) -> Position {
+    pub const fn new_unchecked(column: i8, row: i8) -> Position {
         // debug_assert!(
         //     I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
         //     "column and row were expected to be 0..64 but were column: {} and row: {}",
@@ -33,7 +34,7 @@ impl Position {
         }
     }
 
-    pub fn unchecked_from_index(index: usize) -> Position {
+    pub fn from_index_unchecked(index: usize) -> Position {
         debug_assert!(
             USIZE_RANGE_063.contains(&index),
             "index was expected to be 0..64 but was {}",
@@ -63,25 +64,29 @@ impl Position {
         match direction {
             Direction::Up => {
                 let new_column = self.column + 1;
-                if new_column == 8 { None } else { Some(Position::unchecked_new(new_column, self.row)) }
+                if new_column == 8 { None } else { Some(Position::new_unchecked(new_column, self.row)) }
             },
             Direction::Down => {
                 let new_column = self.column - 1;
-                if new_column == -1 { None } else { Some(Position::unchecked_new(new_column, self.row)) }
+                if new_column == -1 { None } else { Some(Position::new_unchecked(new_column, self.row)) }
             },
             Direction::Right => {
                 let new_row = self.row + 1;
-                if new_row == 8 { None } else { Some(Position::unchecked_new(self.column, new_row)) }
+                if new_row == 8 { None } else { Some(Position::new_unchecked(self.column, new_row)) }
             },
             Direction::Left => {
                 let new_row = self.row - 1;
-                if new_row == -1 { None } else { Some(Position::unchecked_new(self.column, new_row )) }
+                if new_row == -1 { None } else { Some(Position::new_unchecked(self.column, new_row )) }
             },
-            Direction::UpRight => Position::checked_new(self.column + 1, self.row + 1),
-            Direction::DownRight => Position::checked_new(self.column - 1, self.row + 1),
-            Direction::DownLeft => Position::checked_new(self.column - 1, self.row - 1),
-            Direction::UpLeft => Position::checked_new(self.column + 1, self.row - 1),
+            Direction::UpRight => Position::new_checked(self.column + 1, self.row + 1),
+            Direction::DownRight => Position::new_checked(self.column - 1, self.row + 1),
+            Direction::DownLeft => Position::new_checked(self.column - 1, self.row - 1),
+            Direction::UpLeft => Position::new_checked(self.column + 1, self.row - 1),
         }
+    }
+
+    pub fn step_unchecked(&self, direction: Direction) -> Position {
+        self.step(direction).expect("programmer assured this was fine")
     }
 
     fn jump(
@@ -89,7 +94,7 @@ impl Position {
         column_delta: i8,
         row_delta: i8,
     ) -> Option<Position> {
-        Position::checked_new(self.column + column_delta, self.row + row_delta)
+        Position::new_checked(self.column + column_delta, self.row + row_delta)
     }
 
     pub fn reachable_directed_positions<'a, 'b>(
@@ -100,32 +105,6 @@ impl Position {
     ) -> DirectedPosIterator<'b > {
         DirectedPosIterator::new(*self, fig_color, direction, board)
     }
-
-    // pub fn reachable_straight_positions<'a, 'b>(
-    //     &'a self,
-    //     fig_color: Color,
-    //     board: &'b Board,
-    // ) -> impl Iterator<Item=&'b Position> {
-    //     let pos_iter1= DirectedPosIterator::new(*self, fig_color, Direction::Up, board);
-    //     let pos_iter2= DirectedPosIterator::new(*self, fig_color, Direction::Right, board);
-    //     let pos_iter3= DirectedPosIterator::new(*self, fig_color, Direction::Down, board);
-    //     let pos_iter4= DirectedPosIterator::new(*self, fig_color, Direction::Left, board);
-    //
-    //     pos_iter1.chain(pos_iter2).into_iter().chain(pos_iter3).into_iter().chain(pos_iter4).into_iter()
-    // }
-    //
-    // pub fn reachable_diagonal_positions<'a, 'b>(
-    //     &'a self,
-    //     fig_color: Color,
-    //     board: &'b Board,
-    // ) -> impl Iterator<Item=&'b Position> {
-    //     let pos_iter1= DirectedPosIterator::new(*self, fig_color, Direction::UpRight, board);
-    //     let pos_iter2= DirectedPosIterator::new(*self, fig_color, Direction::UpLeft, board);
-    //     let pos_iter3= DirectedPosIterator::new(*self, fig_color, Direction::DownLeft, board);
-    //     let pos_iter4= DirectedPosIterator::new(*self, fig_color, Direction::DownRight, board);
-    //
-    //     pos_iter1.chain(pos_iter2).into_iter().chain(pos_iter3).into_iter().chain(pos_iter4).into_iter()
-    // }
 
     pub fn reachable_knight_positions<'a, 'b>(
         &'a self,
@@ -157,7 +136,7 @@ impl str::FromStr for Position {
             });
         }
 
-        Ok(Position::unchecked_new(column, row))
+        Ok(Position::new_unchecked(column, row))
     }
 }
 
@@ -352,7 +331,7 @@ mod tests {
     ::trace //This attribute enable traceing
     )]
     fn test_position_unchecked_new(column: i8, row: i8, expected_index: usize) {
-        let pos = Position::unchecked_new(column, row);
+        let pos = Position::new_unchecked(column, row);
         assert_eq!(pos.index, expected_index);
     }
 
