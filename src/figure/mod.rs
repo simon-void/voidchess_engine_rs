@@ -5,7 +5,7 @@ use crate::base::*;
 use std::str;
 use crate::game::GameState;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Figure {
     pub fig_type: FigureType,
     pub color: Color,
@@ -24,8 +24,8 @@ impl str::FromStr for Figure {
         match desc {
             "♙" => Ok(Figure{fig_type: FigureType::Pawn, color: Color::White}),
             "♟" => Ok(Figure{fig_type: FigureType::Pawn, color: Color::Black}),
-            "♖" => Ok(Figure{fig_type: FigureType::Rook(RookType::Promoted), color: Color::White}),
-            "♜" => Ok(Figure{fig_type: FigureType::Rook(RookType::Promoted), color: Color::Black}),
+            "♖" => Ok(Figure{fig_type: FigureType::Rook, color: Color::White}),
+            "♜" => Ok(Figure{fig_type: FigureType::Rook, color: Color::Black}),
             "♘" => Ok(Figure { fig_type: FigureType::Knight, color: Color::White }),
             "♞" => Ok(Figure { fig_type: FigureType::Knight, color: Color::Black }),
             "♗" => Ok(Figure { fig_type: FigureType::Bishop, color: Color::White }),
@@ -46,7 +46,7 @@ impl fmt::Display for Figure {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let symbol = match self.fig_type {
             FigureType::Pawn => {if self.color==Color::White {"♙"} else {"♟"}}
-            FigureType::Rook(_) => {if self.color==Color::White {"♖"} else {"♜"}}
+            FigureType::Rook => {if self.color==Color::White {"♖"} else {"♜"}}
             FigureType::Knight => {if self.color==Color::White {"♘"} else {"♞"}}
             FigureType::Bishop => {if self.color==Color::White {"♗"} else {"♝"}}
             FigureType::Queen => {if self.color==Color::White {"♕"} else {"♛"}}
@@ -56,6 +56,7 @@ impl fmt::Display for Figure {
     }
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct FigureAndPosition {
     pub figure: Figure,
     pub pos: Position,
@@ -82,35 +83,12 @@ impl str::FromStr for FigureAndPosition {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FigureType {
     Pawn,
-    Rook(RookType),
+    Rook,
     Knight,
     Bishop,
     Queen,
     King,
-}
-
-impl PartialEq for FigureType {
-    fn eq(&self, other: &FigureType) -> bool {
-        fn rank(this: &FigureType) -> u8 {
-            match this {
-                FigureType::Pawn => 1,
-                FigureType::Rook(_) => 2,
-                FigureType::Knight => 3,
-                FigureType::Bishop => 4,
-                FigureType::Queen => 5,
-                FigureType::King => 6,
-            }
-        }
-        rank(self)==rank(other)
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum RookType {
-    QueenSide,
-    KingSide,
-    Promoted,
 }

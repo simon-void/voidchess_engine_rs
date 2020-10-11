@@ -1,20 +1,20 @@
-use crate::figure::{Figure, FigureType, RookType};
+use crate::figure::{Figure, FigureType};
 use crate::base::{Color, Position};
 use crate::base::I8_RANGE_07;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
 
 static WHITE_PAWN: Figure = Figure {fig_type:FigureType::Pawn, color: Color::White,};
-static WHITE_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook(RookType::QueenSide), color: Color::White,};
-static WHITE_KING_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook(RookType::KingSide), color: Color::White,};
+static WHITE_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::White,};
+static WHITE_KING_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::White,};
 static WHITE_KNIGHT: Figure = Figure {fig_type:FigureType::Knight, color: Color::White,};
 static WHITE_BISHOP: Figure = Figure {fig_type:FigureType::Bishop, color: Color::White,};
 static WHITE_QUEEN: Figure = Figure {fig_type:FigureType::Queen, color: Color::White,};
 static WHITE_KING: Figure = Figure {fig_type:FigureType::King, color: Color::White,};
 
 static BLACK_PAWN: Figure = Figure {fig_type:FigureType::Pawn, color: Color::Black,};
-static BLACK_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook(RookType::QueenSide), color: Color::Black,};
-static BLACK_KING_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook(RookType::KingSide), color: Color::Black,};
+static BLACK_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::Black,};
+static BLACK_KING_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::Black,};
 static BLACK_KNIGHT: Figure = Figure {fig_type:FigureType::Knight, color: Color::Black,};
 static BLACK_BISHOP: Figure = Figure {fig_type:FigureType::Bishop, color: Color::Black,};
 static BLACK_QUEEN: Figure = Figure {fig_type:FigureType::Queen, color: Color::Black,};

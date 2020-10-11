@@ -29,3 +29,30 @@ impl fmt::Display for Color {
         }
     }
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct Deactivatable {
+    value: bool,
+}
+
+impl Deactivatable {
+    pub fn new(value: bool) ->Deactivatable {
+        Deactivatable {
+            value,
+        }
+    }
+
+    pub fn deactivate(&mut self) {
+        self.value = false;
+    }
+
+    pub fn get_value(&self) -> bool {
+        self.value
+    }
+}
+
+impl fmt::Display for Deactivatable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}

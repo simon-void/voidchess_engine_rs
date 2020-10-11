@@ -16,7 +16,7 @@ pub fn for_reachable_moves(
             match_state.en_passant_intercept_pos,
             move_collector
         ),
-        FigureType::Rook(_) => for_reachable_rook_moves(
+        FigureType::Rook => for_reachable_rook_moves(
             match_state.turn_by,
             pos,
             &match_state.board,
@@ -45,12 +45,12 @@ pub fn for_reachable_moves(
             let is_king_side_castling_possible: bool;
             match match_state.turn_by {
                 Color::White => {
-                    is_queen_side_castling_possible = match_state.is_white_queen_side_castling_possible;
-                    is_king_side_castling_possible = match_state.is_white_king_side_castling_possible;
+                    is_queen_side_castling_possible = match_state.is_white_queen_side_castling_possible.get_value();
+                    is_king_side_castling_possible = match_state.is_white_king_side_castling_possible.get_value();
                 },
                 Color::Black => {
-                    is_queen_side_castling_possible = match_state.is_black_queen_side_castling_possible;
-                    is_king_side_castling_possible = match_state.is_black_king_side_castling_possible;
+                    is_queen_side_castling_possible = match_state.is_black_queen_side_castling_possible.get_value();
+                    is_king_side_castling_possible = match_state.is_black_king_side_castling_possible.get_value();
                 },
             }
             for_reachable_king_moves(

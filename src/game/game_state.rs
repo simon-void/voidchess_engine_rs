@@ -1,5 +1,5 @@
-use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind, Direction};
-use crate::figure::{Figure, FigureType, RookType, FigureAndPosition};
+use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind, Direction, Deactivatable};
+use crate::figure::{Figure, FigureType, FigureAndPosition};
 use crate::game::Board;
 use tinyvec::*;
 use std::fmt;
@@ -11,10 +11,10 @@ pub struct GameState {
     white_king_pos: Position,
     black_king_pos: Position,
     pub en_passant_intercept_pos: Option<Position>,
-    pub is_white_queen_side_castling_possible: bool,
-    pub is_white_king_side_castling_possible: bool,
-    pub is_black_queen_side_castling_possible: bool,
-    pub is_black_king_side_castling_possible: bool,
+    pub is_white_queen_side_castling_possible: Deactivatable,
+    pub is_white_king_side_castling_possible: Deactivatable,
+    pub is_black_queen_side_castling_possible: Deactivatable,
+    pub is_black_king_side_castling_possible: Deactivatable,
 }
 
 impl GameState {
@@ -25,10 +25,10 @@ impl GameState {
             white_king_pos: "e1".parse::<Position>().ok().unwrap(),
             black_king_pos: "e8".parse::<Position>().ok().unwrap(),
             en_passant_intercept_pos: None,
-            is_white_queen_side_castling_possible: true,
-            is_white_king_side_castling_possible: true,
-            is_black_queen_side_castling_possible: true,
-            is_black_king_side_castling_possible: true,
+            is_white_queen_side_castling_possible: Deactivatable::new(true),
+            is_white_king_side_castling_possible: Deactivatable::new(true),
+            is_black_queen_side_castling_possible: Deactivatable::new(true),
+            is_black_king_side_castling_possible: Deactivatable::new(true),
         }
     }
 
@@ -148,16 +148,44 @@ impl GameState {
             },
         };
 
+        fn board_contains_rook_at(pos: Position, color: Color, board: &Board) -> bool {
+            if let Some(figure) = board.get_figure(pos) {
+                figure.fig_type==FigureType::Rook && figure.color==color
+            } else {
+                false
+            }
+        }
+
+        let is_white_king_on_starting_pos = white_king_pos == WHITE_KING_STARTING_POS;
+        let is_black_king_on_starting_pos = black_king_pos == BLACK_KING_STARTING_POS;
+
+        let is_white_queen_side_rook_on_starting_pos = board_contains_rook_at(
+            WHITE_QUEEN_SIDE_ROOK_STARTING_POS, Color::White, &board,
+        );
+        let is_white_king_side_rook_on_starting_pos = board_contains_rook_at(
+            WHITE_KING_SIDE_ROOK_STARTING_POS, Color::White, &board,
+        );
+        let is_black_queen_side_rook_on_starting_pos = board_contains_rook_at(
+            BLACK_QUEEN_SIDE_ROOK_STARTING_POS, Color::White, &board,
+        );
+        let is_black_king_side_rook_on_starting_pos = board_contains_rook_at(
+            BLACK_KING_SIDE_ROOK_STARTING_POS, Color::White, &board,
+        );
+        let mut is_white_queen_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_queen_side_rook_on_starting_pos);
+        let mut is_white_king_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_king_side_rook_on_starting_pos);
+        let mut is_black_queen_side_castling_possible = Deactivatable::new(is_black_king_on_starting_pos && is_black_queen_side_rook_on_starting_pos);
+        let mut is_black_king_side_castling_possible = Deactivatable::new(is_black_king_on_starting_pos && is_black_king_side_rook_on_starting_pos);
+
         let game_state = GameState {
             board,
             turn_by,
             white_king_pos,
             black_king_pos,
             en_passant_intercept_pos,
-            is_white_queen_side_castling_possible: false,
-            is_white_king_side_castling_possible: false,
-            is_black_queen_side_castling_possible: false,
-            is_black_king_side_castling_possible: false,
+            is_white_queen_side_castling_possible,
+            is_white_king_side_castling_possible,
+            is_black_queen_side_castling_possible,
+            is_black_king_side_castling_possible,
         };
 
         if game_state.can_passive_players_king_be_caught() {
@@ -195,14 +223,29 @@ impl GameState {
         }
         let mut new_board = self.board.clone();
         let moving_figure: Figure = self.board.get_figure(next_move.from).unwrap();
+
+        let mut new_is_white_queen_side_castling_possible = self.is_white_queen_side_castling_possible;
+        let mut new_is_white_king_side_castling_possible = self.is_white_king_side_castling_possible;
+        let mut new_is_black_queen_side_castling_possible = self.is_black_queen_side_castling_possible;
+        let mut new_is_black_king_side_castling_possible = self.is_black_king_side_castling_possible;
+
+        if next_move.from == WHITE_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_QUEEN_SIDE_ROOK_STARTING_POS {
+            new_is_white_queen_side_castling_possible.deactivate()
+        }
+        if next_move.from == WHITE_KING_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_KING_SIDE_ROOK_STARTING_POS {
+            new_is_white_king_side_castling_possible.deactivate()
+        }
+        if next_move.from == BLACK_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_QUEEN_SIDE_ROOK_STARTING_POS {
+            new_is_black_queen_side_castling_possible.deactivate()
+        }
+        if next_move.from == BLACK_KING_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_KING_SIDE_ROOK_STARTING_POS {
+            new_is_black_king_side_castling_possible.deactivate()
+        }
+
         let (
             new_white_king_pos,
             new_black_king_pos,
             new_en_passant_intercept_pos,
-            new_is_white_queen_side_castling_possible,
-            new_is_white_king_side_castling_possible,
-            new_is_black_queen_side_castling_possible,
-            new_is_black_king_side_castling_possible,
         ) = match moving_figure.fig_type {
             FigureType::King => {
                 let is_castling = if let Some(figure_to_be_caught) = self.board.get_figure(next_move.to) {
@@ -219,65 +262,24 @@ impl GameState {
                 };
 
                 match moving_figure.color {
-                    Color::White => (
-                        new_king_pos,
-                        self.black_king_pos,
-                        None, false, false,
-                        self.is_black_queen_side_castling_possible,
-                        self.is_black_king_side_castling_possible,
-                    ),
-                    Color::Black => (
-                        self.white_king_pos,
-                        new_king_pos,
-                        None,
-                        self.is_white_queen_side_castling_possible,
-                        self.is_white_king_side_castling_possible,
-                        false, false,
-                    ),
-                }
-            },
-            FigureType::Rook(rook_type) => {
-                do_normal_move(&mut new_board, next_move);
-                match rook_type {
-                    RookType::QueenSide => match moving_figure.color {
-                        Color::White => (
-                            self.white_king_pos, self.black_king_pos, None,
-                            false,
-                            self.is_white_king_side_castling_possible,
-                            self.is_black_queen_side_castling_possible,
-                            self.is_black_king_side_castling_possible,
-                        ),
-                        Color::Black => (
-                            self.white_king_pos, self.black_king_pos, None,
-                            self.is_white_queen_side_castling_possible,
-                            self.is_white_king_side_castling_possible,
-                            false,
-                            self.is_black_king_side_castling_possible,
-                        ),
-                    },
-                    RookType::KingSide => match moving_figure.color {
-                        Color::White => (
-                            self.white_king_pos, self.black_king_pos, None,
-                            self.is_white_queen_side_castling_possible,
-                            false,
-                            self.is_black_queen_side_castling_possible,
-                            self.is_black_king_side_castling_possible,
-                        ),
-                        Color::Black => (
-                            self.white_king_pos, self.black_king_pos, None,
-                            self.is_white_queen_side_castling_possible,
-                            self.is_white_king_side_castling_possible,
-                            self.is_black_queen_side_castling_possible,
-                            false,
-                        ),
-                    },
-                    RookType::Promoted => (
-                        self.white_king_pos, self.black_king_pos, None,
-                        self.is_white_queen_side_castling_possible,
-                        self.is_white_king_side_castling_possible,
-                        self.is_black_queen_side_castling_possible,
-                        self.is_black_king_side_castling_possible,
-                    ),
+                    Color::White => {
+                        new_is_white_queen_side_castling_possible.deactivate();
+                        new_is_white_king_side_castling_possible.deactivate();
+                        (
+                            new_king_pos,
+                            self.black_king_pos,
+                            None,
+                        )
+                    }
+                    Color::Black => {
+                        new_is_black_queen_side_castling_possible.deactivate();
+                        new_is_black_king_side_castling_possible.deactivate();
+                        (
+                            self.white_king_pos,
+                            new_king_pos,
+                            None,
+                        )
+                    }
                 }
             },
             FigureType::Pawn => {
@@ -299,10 +301,6 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
-                            self.is_white_queen_side_castling_possible,
-                            self.is_white_king_side_castling_possible,
-                            self.is_black_queen_side_castling_possible,
-                            self.is_black_king_side_castling_possible,
                         )
                     },
                     PawnMoveType::DoubleStep => {
@@ -313,10 +311,6 @@ impl GameState {
                                 next_move.to.column,
                                 (next_move.from.row + next_move.to.row) / 2,
                             )),
-                            self.is_white_queen_side_castling_possible,
-                            self.is_white_king_side_castling_possible,
-                            self.is_black_queen_side_castling_possible,
-                            self.is_black_king_side_castling_possible,
                         )
                     },
                     PawnMoveType::EnPassantIntercept => {
@@ -324,10 +318,6 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
-                            self.is_white_queen_side_castling_possible,
-                            self.is_white_king_side_castling_possible,
-                            self.is_black_queen_side_castling_possible,
-                            self.is_black_king_side_castling_possible,
                         )
                     },
                 }
@@ -338,10 +328,6 @@ impl GameState {
                     self.white_king_pos,
                     self.black_king_pos,
                     None,
-                    self.is_white_queen_side_castling_possible,
-                    self.is_white_king_side_castling_possible,
-                    self.is_black_queen_side_castling_possible,
-                    self.is_black_king_side_castling_possible,
                 )
             },
         };
@@ -436,3 +422,10 @@ impl fmt::Display for GameState {
         writeln!(f, "{}", self.board)
     }
 }
+
+static WHITE_KING_STARTING_POS: Position = Position::unchecked_new(4, 0);
+static WHITE_KING_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(7, 0);
+static WHITE_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(0, 0);
+static BLACK_KING_STARTING_POS: Position = Position::unchecked_new(4, 7);
+static BLACK_KING_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(7, 7);
+static BLACK_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::unchecked_new(0, 7);

@@ -18,7 +18,7 @@ fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 1
             Some((fig_type, pos)) => {
                 let fig_value = match fig_type {
                     FigureType::Pawn => get_pawn_value(game_state, pos, color, backward_left, backward_right),
-                    FigureType::Rook(_) => 5.0,
+                    FigureType::Rook => 5.0,
                     FigureType::Knight => 3.0,
                     FigureType::Bishop => 3.01,
                     FigureType::Queen => 9.0,

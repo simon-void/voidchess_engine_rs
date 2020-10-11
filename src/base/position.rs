@@ -5,7 +5,7 @@ use std::str;
 use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub struct Position {
     pub column: i8,
     pub row: i8,
@@ -20,12 +20,12 @@ impl Position {
         Some(Position::unchecked_new(column, row))
     }
 
-    pub fn unchecked_new(column: i8, row: i8) -> Position {
-        debug_assert!(
-            I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
-            "column and row were expected to be 0..64 but were column: {} and row: {}",
-            column, row
-        );
+    pub const fn unchecked_new(column: i8, row: i8) -> Position {
+        // debug_assert!(
+        //     I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
+        //     "column and row were expected to be 0..64 but were column: {} and row: {}",
+        //     column, row
+        // );
         Position {
             column,
             row,
@@ -159,6 +159,20 @@ impl str::FromStr for Position {
 
         Ok(Position::unchecked_new(column, row))
     }
+}
+
+impl PartialEq for Position {
+    fn eq(&self, other: &Self) -> bool {
+        self.index==other.index
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.index!=other.index
+    }
+}
+
+impl Eq for Position {
+
 }
 
 impl fmt::Display for Position {
