@@ -1,4 +1,4 @@
-use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind};
+use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind, Direction};
 use crate::figure::{Figure, FigureType, RookType, FigureAndPosition};
 use crate::game::Board;
 use tinyvec::*;
@@ -33,7 +33,11 @@ impl GameState {
     }
 
 
-    pub fn from_manual_config(turn_by: Color, positioned_figures: Vec<FigureAndPosition>) -> Result<GameState, ChessError> {
+    pub fn from_manual_config(
+        turn_by: Color,
+        en_passant_intercept_pos: Option<Position>,
+        positioned_figures: Vec<FigureAndPosition>
+    ) -> Result<GameState, ChessError> {
         let mut board = Board::empty();
         let mut opt_white_king_pos: Option<Position> = None;
         let mut opt_black_king_pos: Option<Position> = None;
@@ -82,6 +86,49 @@ impl GameState {
             };
         }
 
+        // check en-passant
+        if let Some(en_passant_pos) = en_passant_intercept_pos {
+            let (
+                expected_row,
+                expected_row_in_text,
+                forward_dir,
+            ) = match turn_by {
+                Color::White => {
+                    (5 as i8, 6 as i8, Direction::Down)
+                }
+                Color::Black => {
+                    (2 as i8, 3 as i8, Direction::Up)
+                }
+            };
+            if en_passant_pos.row != expected_row {
+                return Err(ChessError {
+                    msg: format!("it's {}'s turn so the en-passant position has to be on the {}th row but it's {}.", turn_by, expected_row_in_text, en_passant_pos),
+                    kind: ErrorKind::IllegalConfiguration,
+                })
+            }
+            let forward_pawn_pos = en_passant_pos.step(forward_dir).unwrap();
+            let mut contains_correct_pawn = false;
+            if let Some(forward_figure) = board.get_figure(forward_pawn_pos) {
+                if forward_figure.fig_type==FigureType::Pawn && forward_figure.color!=turn_by {
+                    contains_correct_pawn = true;
+                }
+            }
+            if !contains_correct_pawn {
+                return Err(ChessError {
+                    msg: format!("since {} is an en-passant pos, there should be a {} pawn on {} but isn't.", en_passant_pos, turn_by.toggle(), forward_pawn_pos),
+                    kind: ErrorKind::IllegalConfiguration,
+                })
+            }
+
+            let backward_empty_pos = en_passant_pos.step(forward_dir.reverse()).unwrap();
+            if !board.is_empty(backward_empty_pos) {
+                return Err(ChessError {
+                    msg: format!("since {} is an en-passant pos, the position behind it ({}) should be empty but isn't.", en_passant_pos, backward_empty_pos),
+                    kind: ErrorKind::IllegalConfiguration,
+                })
+            }
+        }
+
         let white_king_pos = match opt_white_king_pos {
             Some(pos) => pos,
             None => {
@@ -106,7 +153,7 @@ impl GameState {
             turn_by,
             white_king_pos,
             black_king_pos,
-            en_passant_intercept_pos: None,
+            en_passant_intercept_pos,
             is_white_queen_side_castling_possible: false,
             is_white_king_side_castling_possible: false,
             is_black_queen_side_castling_possible: false,

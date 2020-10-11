@@ -291,6 +291,19 @@ impl Direction {
             Color::Black => (Direction::DownLeft, Direction::Down,Direction::DownRight),
         }
     }
+
+    pub fn reverse(&self) -> Direction {
+        match self {
+            Direction::Up => Direction::Down,
+            Direction::UpRight => Direction::DownLeft,
+            Direction::Right => Direction::Left,
+            Direction::DownRight => Direction::UpLeft,
+            Direction::Down => Direction::Up,
+            Direction::DownLeft => Direction::UpRight,
+            Direction::Left => Direction::Right,
+            Direction::UpLeft => Direction::DownRight,
+        }
+    }
 }
 
 pub static ALL_DIRECTIONS: [Direction; 8] = [

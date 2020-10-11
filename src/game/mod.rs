@@ -3,7 +3,7 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::base::{Moves, ChessError, ErrorKind, Move, Color};
+use crate::base::{Moves, ChessError, ErrorKind, Move, Color, Position};
 use std::iter::Peekable;
 use std::{str, fmt};
 use crate::figure::FigureAndPosition;
@@ -60,11 +60,12 @@ impl str::FromStr for Game {
         }
         let mut token_iter = trimmed_desc.split(" ").into_iter();
 
-        let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
-        if desc_contains_figures {
-            game_by_figures_on_board(token_iter)
-        } else {
+        // let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
+        let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains("-");
+        if desc_contains_moves {
             game_by_moves_from_start(token_iter)
+        } else {
+            game_by_figures_on_board(token_iter)
         }
     }
 }
@@ -103,13 +104,27 @@ fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<Game, Ch
     };
 
     let mut positioned_figures: Vec<FigureAndPosition> = vec![];
+    let mut opt_en_passant_pos: Option<Position> = None;
 
     for token in token_iter {
-        let figure_and_pos = token.parse::<FigureAndPosition>()?;
-        positioned_figures.push(figure_and_pos);
+        // tokens should either start with a figure char (from "♔♕♗♘♖♙♚♛♝♞♜♟") or E (for en-passant)
+        // followed by a position between "a1" and "h8"
+        if token.starts_with("E") {
+            let en_passant_pos = token[1..].parse::<Position>()?;
+            if let Some(old_en_passant_pos) = opt_en_passant_pos {
+                return Err(ChessError {
+                    msg: format!("there are two en-passant tokens present (on {} and {}) but only one is allowed.", old_en_passant_pos, en_passant_pos),
+                    kind: ErrorKind::IllegalConfiguration,
+                })
+            }
+            opt_en_passant_pos = Some(en_passant_pos);
+        } else {
+            let figure_and_pos = token.parse::<FigureAndPosition>()?;
+            positioned_figures.push(figure_and_pos);
+        }
     }
 
-    let game_state = GameState::from_manual_config(turn_by, positioned_figures)?;
+    let game_state = GameState::from_manual_config(turn_by, opt_en_passant_pos, positioned_figures)?;
     Ok(Game::from(game_state))
 }
 
