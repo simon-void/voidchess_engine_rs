@@ -13,7 +13,7 @@ pub struct Figure {
 
 impl Figure {
     pub fn for_reachable_moves(&self, pos: Position, match_state: &GameState, move_collector: &mut Moves) {
-        functions::for_reachable_moves(self.fig_type, pos, match_state, move_collector)
+        functions::reachable::for_reachable_moves(self.fig_type, pos, match_state, move_collector)
     }
 }
 

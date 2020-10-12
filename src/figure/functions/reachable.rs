@@ -1,6 +1,7 @@
 use crate::figure::{FigureType};
 use crate::game::{Board, FieldContent, GameState};
 use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, Moves, Position, Move};
+use crate::figure::functions::castling::{is_king_side_castling_allowed, is_queen_side_castling_allowed};
 
 pub fn for_reachable_moves(
     fig_type: FigureType,
@@ -41,24 +42,24 @@ pub fn for_reachable_moves(
             move_collector
         ),
         FigureType::King => {
-            let is_queen_side_castling_possible: bool;
-            let is_king_side_castling_possible: bool;
+            let is_queen_side_castling_still_possible: bool;
+            let is_king_side_castling_still_possible: bool;
             match match_state.turn_by {
                 Color::White => {
-                    is_queen_side_castling_possible = match_state.is_white_queen_side_castling_possible.get_value();
-                    is_king_side_castling_possible = match_state.is_white_king_side_castling_possible.get_value();
+                    is_queen_side_castling_still_possible = match_state.is_white_queen_side_castling_still_possible.get_value();
+                    is_king_side_castling_still_possible = match_state.is_white_king_side_castling_still_possible.get_value();
                 },
                 Color::Black => {
-                    is_queen_side_castling_possible = match_state.is_black_queen_side_castling_possible.get_value();
-                    is_king_side_castling_possible = match_state.is_black_king_side_castling_possible.get_value();
+                    is_queen_side_castling_still_possible = match_state.is_black_queen_side_castling_still_possible.get_value();
+                    is_king_side_castling_still_possible = match_state.is_black_king_side_castling_still_possible.get_value();
                 },
             }
             for_reachable_king_moves(
                 match_state.turn_by,
                 pos,
                 &match_state.board,
-                is_queen_side_castling_possible,
-                is_king_side_castling_possible,
+                is_queen_side_castling_still_possible,
+                is_king_side_castling_still_possible,
                 move_collector
             )
         },
@@ -194,8 +195,8 @@ fn for_reachable_king_moves(
     color: Color,
     king_pos: Position,
     board: &Board,
-    is_queen_side_castling_possible: bool,
-    is_king_side_castling_possible: bool,
+    is_queen_side_castling_still_possible: bool,
+    is_king_side_castling_still_possible: bool,
     move_collector: &mut Moves,
 ) {
     ALL_DIRECTIONS.iter().for_each(|&direction|{
@@ -208,122 +209,17 @@ fn for_reachable_king_moves(
             }
         }
     });
-    if is_queen_side_castling_possible {
-        if let Some(rook_pos) = check_if_queen_side_castling_possible(color, king_pos, board) {
+    if is_queen_side_castling_still_possible {
+        if let Some(rook_pos) = is_queen_side_castling_allowed(color, king_pos, board) {
             move_collector.push(Move::new(king_pos, rook_pos))
         }
     }
-    if is_king_side_castling_possible {
-        if let Some(rook_pos) = check_if_king_side_castling_possible(color, king_pos, board) {
+    if is_king_side_castling_still_possible {
+        if let Some(rook_pos) = is_king_side_castling_allowed(color, king_pos, board) {
             move_collector.push(Move::new(king_pos, rook_pos))
         }
     }
 }
-
-fn check_if_queen_side_castling_possible(
-    color: Color,
-    king_pos: Position,
-    board: &Board,
-) -> Option<Position> {
-    let positions_between_king_and_rook = [Position::new_unchecked(1, king_pos.row), Position::new_unchecked(2, king_pos.row), Position::new_unchecked(3, king_pos.row)];
-    if positions_between_king_and_rook.iter().any(|&pos|{!board.is_empty(pos)}) {
-        return None
-    }
-    if let Some((opponent_fig_type, _)) = get_first_opposite_color_figure_type_in_direction(king_pos, color, Direction::Right, board) {
-        if opponent_fig_type==FigureType::Rook || opponent_fig_type==FigureType::Queen {
-            return None
-        }
-    }
-    let d_column_pos = king_pos.step_unchecked(Direction::Left);
-    if check_if_king_is_interceptable_on(king_pos, color, board) || check_if_king_is_interceptable_on(d_column_pos, color, board) {
-        return None
-    }
-    Some(d_column_pos.step_unchecked(Direction::Left))
-}
-
-
-fn check_if_king_side_castling_possible(
-    color: Color,
-    king_pos: Position,
-    board: &Board,
-) -> Option<Position> {
-    let positions_between_king_and_rook = [Position::new_unchecked(5, king_pos.row), Position::new_unchecked(6, king_pos.row)];
-    if positions_between_king_and_rook.iter().any(|&pos|{!board.is_empty(pos)}) {
-        return None
-    }
-    if let Some((opponent_fig_type, _)) = get_first_opposite_color_figure_type_in_direction(king_pos, color, Direction::Left, board) {
-        if opponent_fig_type==FigureType::Rook || opponent_fig_type==FigureType::Queen {
-            return None
-        }
-    }
-    let f_column_pos = king_pos.step_unchecked(Direction::Right);
-    if check_if_king_is_interceptable_on(king_pos, color, board) || check_if_king_is_interceptable_on(f_column_pos, color, board) {
-        return None
-    }
-    Some(f_column_pos.step_unchecked(Direction::Right))
-}
-
-fn check_if_king_is_interceptable_on(king_pos: Position, color: Color, board: &Board) -> bool {
-    let (forward_left, forward, forward_right) = Direction::forward_directions(color);
-    if let Some((opponent_fig_type, _)) = get_first_opposite_color_figure_type_in_direction(king_pos, color, forward, board) {
-        if opponent_fig_type==FigureType::Rook || opponent_fig_type==FigureType::Queen {
-            return true
-        }
-    }
-    let can_be_intercepted_on_diagonal = [forward_left, forward_right].iter().any(|diagonal_direction| {
-        if let Some((opponent_fig_type, is_attacker_next_to_self)) = get_first_opposite_color_figure_type_in_direction(king_pos, color, *diagonal_direction, board) {
-            return match opponent_fig_type {
-                FigureType::Bishop | FigureType::Queen => true,
-                FigureType::Pawn if is_attacker_next_to_self => true,
-                _ => false,
-            }
-        }
-        false
-    });
-    if can_be_intercepted_on_diagonal {
-        return true
-    }
-    for possible_knight_attacker_pos in king_pos.reachable_knight_positions(color, board) {
-        if let Some(figure) = board.get_figure(possible_knight_attacker_pos){
-            // different color is already guaranteed by reachable_knight_positions
-            if figure.fig_type == FigureType::Knight {
-                return true
-            }
-        }
-    }
-    false
-}
-
-/*
- * returns the optional figure_type and if that figure is right next to self
- */
-fn get_first_opposite_color_figure_type_in_direction(
-    king_pos: Position,
-    king_color: Color,
-    direction: Direction,
-    board: & Board,
-) -> Option<(FigureType,bool)> {
-    let mut old_pos = king_pos;
-    let mut is_attacker_next_to_self = true;
-    loop {
-        let new_pos = match old_pos.step(direction) {
-            Some(pos) => {
-                pos
-            },
-            None => {return None},
-        };
-        if let Some(figure) = board.get_figure(new_pos) {
-            return if figure.color == king_color {
-                None
-            } else {
-                Some((figure.fig_type, is_attacker_next_to_self))
-            }
-        }
-        old_pos = new_pos;
-        is_attacker_next_to_self = false;
-    }
-}
-
 
 //------------------------------Tests------------------------
 

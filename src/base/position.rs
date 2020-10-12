@@ -62,31 +62,31 @@ impl Position {
 
     pub fn step(&self, direction: Direction) -> Option<Position> {
         match direction {
-            Direction::Up => {
+            Direction::Right => {
                 let new_column = self.column + 1;
                 if new_column == 8 { None } else { Some(Position::new_unchecked(new_column, self.row)) }
             },
-            Direction::Down => {
+            Direction::Left => {
                 let new_column = self.column - 1;
                 if new_column == -1 { None } else { Some(Position::new_unchecked(new_column, self.row)) }
             },
-            Direction::Right => {
+            Direction::Up => {
                 let new_row = self.row + 1;
                 if new_row == 8 { None } else { Some(Position::new_unchecked(self.column, new_row)) }
             },
-            Direction::Left => {
+            Direction::Down => {
                 let new_row = self.row - 1;
                 if new_row == -1 { None } else { Some(Position::new_unchecked(self.column, new_row )) }
             },
             Direction::UpRight => Position::new_checked(self.column + 1, self.row + 1),
-            Direction::DownRight => Position::new_checked(self.column - 1, self.row + 1),
+            Direction::UpLeft => Position::new_checked(self.column - 1, self.row + 1),
             Direction::DownLeft => Position::new_checked(self.column - 1, self.row - 1),
-            Direction::UpLeft => Position::new_checked(self.column + 1, self.row - 1),
+            Direction::DownRight => Position::new_checked(self.column + 1, self.row - 1),
         }
     }
 
     pub fn step_unchecked(&self, direction: Direction) -> Position {
-        self.step(direction).expect("programmer assured this was fine")
+        self.step(direction).unwrap()
     }
 
     fn jump(
@@ -328,7 +328,7 @@ mod tests {
     case(7, 7, 63),
     case(1, 0, 1),
     case(0, 1, 8),
-    ::trace //This attribute enable traceing
+    ::trace //This leads to the arguments being printed in front of the test result.
     )]
     fn test_position_unchecked_new(column: i8, row: i8, expected_index: usize) {
         let pos = Position::new_unchecked(column, row);
@@ -341,12 +341,37 @@ mod tests {
     case("h8", 7, 7, 63),
     case("b1", 1, 0, 1),
     case("a2", 0, 1, 8),
-    ::trace //This attribute enable traceing
+    ::trace //This leads to the arguments being printed in front of the test result.
     )]
     fn test_position_from_str(pos_str: &str, expected_column: i8, expected_row: i8, expected_index: usize) {
         let pos = pos_str.parse::<Position>().unwrap();
         assert_eq!(pos.column, expected_column);
         assert_eq!(pos.row, expected_row);
         assert_eq!(pos.index, expected_index);
+    }
+
+    #[rstest(
+    pos_str, direction, expected_end_pos_str,
+    case("e4", Direction::Up, "e5"),
+    case("e4", Direction::UpRight, "f5"),
+    case("e4", Direction::Right, "f4"),
+    case("e4", Direction::DownRight, "f3"),
+    case("e4", Direction::Down, "e3"),
+    case("e4", Direction::DownLeft, "d3"),
+    case("e4", Direction::Left, "d4"),
+    case("e4", Direction::UpLeft, "d5"),
+    case("e8", Direction::Up, "none"),
+    case("e1", Direction::Down, "none"),
+    case("a4", Direction::Left, "none"),
+    case("h4", Direction::Right, "none"),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_position_step(pos_str: &str, direction: Direction, expected_end_pos_str: &str) {
+        let start_pos = pos_str.parse::<Position>().unwrap();
+        let end_pos_string = match start_pos.step(direction) {
+            None => {String::from("none")}
+            Some(pos) => {format!("{}", pos)}
+        } ;
+        assert_eq!(end_pos_string, String::from(expected_end_pos_str));
     }
 }

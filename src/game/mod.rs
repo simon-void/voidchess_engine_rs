@@ -65,7 +65,8 @@ impl str::FromStr for Game {
         if desc_contains_moves {
             game_by_moves_from_start(token_iter)
         } else {
-            game_by_figures_on_board(token_iter)
+            let game_state = trimmed_desc.parse::<GameState>()?;
+            Ok(Game::from(game_state))
         }
     }
 }
@@ -88,44 +89,6 @@ fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessE
         }
     }
     Ok(game)
-}
-
-fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<Game, ChessError> {
-    let first_token = token_iter.next().unwrap();
-    let turn_by = match first_token {
-        "white" => Color::White,
-        "black" => Color::Black,
-        _ => {
-            return Err(ChessError {
-                msg: format!("the first token has to be either 'white' or 'black' but was {}", first_token),
-                kind: ErrorKind::IllegalConfiguration,
-            })
-        },
-    };
-
-    let mut positioned_figures: Vec<FigureAndPosition> = vec![];
-    let mut opt_en_passant_pos: Option<Position> = None;
-
-    for token in token_iter {
-        // tokens should either start with a figure char (from "♔♕♗♘♖♙♚♛♝♞♜♟") or E (for en-passant)
-        // followed by a position between "a1" and "h8"
-        if token.starts_with("E") {
-            let en_passant_pos = token[1..].parse::<Position>()?;
-            if let Some(old_en_passant_pos) = opt_en_passant_pos {
-                return Err(ChessError {
-                    msg: format!("there are two en-passant tokens present (on {} and {}) but only one is allowed.", old_en_passant_pos, en_passant_pos),
-                    kind: ErrorKind::IllegalConfiguration,
-                })
-            }
-            opt_en_passant_pos = Some(en_passant_pos);
-        } else {
-            let figure_and_pos = token.parse::<FigureAndPosition>()?;
-            positioned_figures.push(figure_and_pos);
-        }
-    }
-
-    let game_state = GameState::from_manual_config(turn_by, opt_en_passant_pos, positioned_figures)?;
-    Ok(Game::from(game_state))
 }
 
 pub enum MoveResult {

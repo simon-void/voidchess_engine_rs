@@ -128,6 +128,15 @@ impl Board {
         self.get_figure(pos).is_none()
     }
 
+    pub fn contains_figure(&self, pos: Position, fig_type: FigureType, color: Color) -> bool {
+        match self.state[pos.index] {
+            None => false,
+            Some(figure) => {
+                figure.fig_type == fig_type && figure.color == color
+            }
+        }
+    }
+
     pub fn get_content_type(&self, pos: Position, color: Color) -> FieldContent {
         match self.get_figure(pos) {
             Some(figure) => if figure.color==color {
