@@ -1,6 +1,6 @@
 use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind, Direction, Deactivatable};
 use crate::figure::{Figure, FigureType, FigureAndPosition};
-use crate::game::{Board, MoveResult};
+use crate::game::{Board};
 use tinyvec::*;
 use std::{fmt,str};
 
@@ -539,3 +539,41 @@ static WHITE_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(0,
 pub static BLACK_KING_STARTING_POS: Position = Position::new_unchecked(4, 7);
 static BLACK_KING_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(7, 7);
 static BLACK_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(0, 7);
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    use crate::game::{GameState};
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+
+    #[rstest(
+    game_config_testing, expected_nr_of_reachable_moves,
+    case("", 20),
+    case("e2-e4 e7-e5", 29),
+    case("e2-e4 a7-a6", 30),
+    case("e2-e4 b7-b5", 29),
+    case("a2-a4 a7-a6 a4-a5 b7-b5", 22), // en-passant
+    case("white ♔a1 ♙b5 ♟a6 Ec6 ♟c5 ♚e8", 6), // en-passant
+    case("white ♖a2 ♔e2 ♖h2 ♚e8", 27), // no castling
+    case("white ♖a1 ♔e1 ♖h1 ♚e8", 26), // castling
+    case("white ♖a1 ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", 15), // castling
+    case("white ♔a1 ♚c1", 3), // king can be caught
+    case("white ♔a1 ♚b1", 3), // king can be caught
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_get_reachable_moves(
+        game_config_testing: &str,
+        expected_nr_of_reachable_moves: usize,
+    ) {
+        let game_state = game_config_testing.parse::<GameState>().unwrap();
+        let white_nr_of_reachable_moves = game_state.get_reachable_moves().len();
+        assert_eq!(white_nr_of_reachable_moves, expected_nr_of_reachable_moves, "nr of reachable moves");
+
+        let black_nr_of_reachable_moves = game_state.toggle_colors().get_reachable_moves().len();
+        assert_eq!(black_nr_of_reachable_moves, expected_nr_of_reachable_moves, "nr of reachable moves");
+    }
+}

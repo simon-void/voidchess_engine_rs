@@ -147,7 +147,6 @@ mod tests {
     use super::*;
     use rstest::*;
     use crate::game::{WHITE_KING_STARTING_POS, GameState, BLACK_KING_STARTING_POS};
-    use crate::Game;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 

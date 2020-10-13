@@ -3,10 +3,8 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::base::{Moves, ChessError, ErrorKind, Move, Color, Position};
-use std::iter::Peekable;
+use crate::base::{Moves, ChessError, ErrorKind, Move};
 use std::{str, fmt};
-use crate::figure::FigureAndPosition;
 
 #[derive(Clone, Debug)]
 pub struct Game {
@@ -82,7 +80,7 @@ fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessE
             }
             MoveResult::Stopped(reason) => {
                 return Err(ChessError {
-                    msg: format!("game has already ended after move {} in final state {}", a_move, game),
+                    msg: format!("game has already ended after move {} because of {:?} in final state {}", a_move, reason, game),
                     kind: ErrorKind::IllegalConfiguration,
                 })
             }
@@ -91,6 +89,7 @@ fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessE
     Ok(game)
 }
 
+#[derive(Debug)]
 pub enum MoveResult {
     /*
      * bool: was figure taken
@@ -99,6 +98,7 @@ pub enum MoveResult {
     Stopped(StoppedReason),
 }
 
+#[derive(Debug)]
 pub enum StoppedReason {
     InsufficientMaterial,
     ThreeTimesRepetition,
