@@ -4,7 +4,6 @@ use std::ops::Range;
 use std::str;
 use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
-use crate::figure::FigureType;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Position {

@@ -66,12 +66,6 @@ impl str::FromStr for FigureAndPosition {
     type Err = ChessError;
 
     fn from_str(desc: &str) -> Result<Self, Self::Err> {
-        if desc.chars().count()!=3 {
-            return Err(ChessError{
-                msg: format!("FigureAndPosition.from_str: expected three characters like \"♔e1\" but found \"{}\"", desc),
-                kind: ErrorKind::IllegalFormat,
-            })
-        }
         let split_point = desc.len()-2; // splitting is a bit more complicated since utf-8 chars like ♔ take more space than 1 byte
         let figure = desc[..split_point].parse::<Figure>()?;
         let pos = desc[split_point..].parse::<Position>()?;
