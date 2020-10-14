@@ -12,10 +12,20 @@ pub enum Evaluation {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum DrawReason {
-    StaleMate,
-    InsufficientMaterial,
-    ThreeTimesRepetition,
     NoChangeIn50Moves,
+    ThreeTimesRepetition,
+    InsufficientMaterial,
+    StaleMate,
+}
+
+pub fn xsort_evaluations_best_first(evaluations: &mut Vec<Evaluation>) {
+    evaluations.sort_unstable_by(|a, b|{
+        (*b).partial_cmp(a).unwrap()
+    });
+}
+
+pub fn sort_evaluations_best_first(eval1: &Evaluation, eval2: &Evaluation) -> Ordering {
+    (*eval2).partial_cmp(eval1).unwrap()
 }
 
 impl DrawReason {
@@ -69,7 +79,7 @@ impl PartialOrd for Evaluation {
                         if let Evaluation::LooseIn(other_loose_in_nr, other_num_eval) = other {
                             let loose_in_nr_order = self_loose_in_nr.partial_cmp(other_loose_in_nr);
                             if let Some(Ordering::Equal) = loose_in_nr_order {
-                                self_loose_in_nr.partial_cmp(other_loose_in_nr)
+                                self_num_eval.partial_cmp(other_num_eval)
                             } else {
                                 loose_in_nr_order
                             }
@@ -128,14 +138,39 @@ pub struct EvaluatedMove {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use rstest::*;
+    use rstest::*;
     // use crate::engine::evaluations::*;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 
-    // #[test]
-    // fn test_Evaluation_order() {
-    //      let evaluations: Vec<Evaluation> = vec![
-    //      ];
-    // }
+    #[test]
+    fn test_sort_evaluations_best_first() {
+        let e01 = Evaluation::WinIn(1);
+        let e02 = Evaluation::WinIn(3);
+        let e03 = Evaluation::Numeric(3.4);
+        let e04 = Evaluation::Numeric(0.4);
+        let e05 = Evaluation::Numeric(0.0);
+        let e06 = Evaluation::Draw(DrawReason::StaleMate);
+        let e07 = Evaluation::Draw(DrawReason::InsufficientMaterial);
+        let e08 = Evaluation::Draw(DrawReason::ThreeTimesRepetition);
+        let e09 = Evaluation::Draw(DrawReason::NoChangeIn50Moves);
+        let e10 = Evaluation::Numeric(-0.2);
+        let e11 = Evaluation::Numeric(-3.0);
+        let e12 = Evaluation::LooseIn(4, -5.0);
+        let e13 = Evaluation::LooseIn(3, 5.0);
+        let e14 = Evaluation::LooseIn(3, 3.0);
+        let e15 = Evaluation::LooseIn(3, -7.0);
+        let e16 = Evaluation::LooseIn(1, 1.0);
+
+         let mut actual_sorted_evaluations: Vec<Evaluation> = vec![
+             e06, e02, e16, e04, e01, e07, e14, e08, e03, e09, e05, e15, e13, e11, e10, e12,
+         ];
+        actual_sorted_evaluations.sort_unstable_by(sort_evaluations_best_first);
+
+        let expected_sorted_evaluations: Vec<Evaluation> = vec![
+            e01, e02, e03, e04, e05, e06, e07, e08, e09, e10, e11, e12, e13, e14, e15, e16,
+        ];
+
+        assert_eq!(actual_sorted_evaluations, expected_sorted_evaluations);
+    }
 }

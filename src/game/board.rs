@@ -217,7 +217,7 @@ impl Display for Board {
                 match fig_option {
                     None => write!(f, "_"),
                     Some(figure) => write!(f, "{}", figure),
-                };
+                }?;
             }
             writeln!(f, " {}", row_index + 1);
         }

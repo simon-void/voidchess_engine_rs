@@ -62,7 +62,7 @@ impl str::FromStr for Game {
         if trimmed_desc.is_empty() {
             return Ok(Game::classic())
         }
-        let mut token_iter = trimmed_desc.split(" ").into_iter();
+        let token_iter = trimmed_desc.split(" ").into_iter();
 
         // let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
         let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains("-");

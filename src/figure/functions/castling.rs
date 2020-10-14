@@ -1,6 +1,5 @@
 use crate::base::{Color, Position, Direction};
 use crate::game::Board;
-use crate::figure::FigureType;
 use crate::figure::functions::check_search::{is_king_straight_attackable, is_king_attackable_by_knight, is_king_forward_diagonal_attackable};
 
 /*
