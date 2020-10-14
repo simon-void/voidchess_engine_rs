@@ -28,6 +28,9 @@ impl Game {
 
     pub fn play(&self, a_move: &Move) -> MoveResult {
         let new_game_state = self.latest_state.do_move(*a_move);
+        if !new_game_state.contains_sufficient_material_to_continue() {
+            return MoveResult::Stopped(StoppedReason::InsufficientMaterial);
+        }
         let new_game = Game::from(new_game_state);
         let move_result = MoveResult::Ongoing(new_game, false); //TODO don't hardcode Ongoing and don't hardcode false(=no figure hit)!
         move_result
@@ -37,8 +40,11 @@ impl Game {
         &self.reachable_moves
     }
 
-    pub fn can_passive_players_king_be_caught(&self) -> bool {
-        self.latest_state.can_passive_players_king_be_caught()
+    pub fn is_passive_king_in_check(&self) -> bool {
+        let passive_king_pos = self.latest_state.get_passive_king_pos();
+        self.reachable_moves.iter().any(|reachable_move|{
+            reachable_move.to == passive_king_pos
+        })
     }
 }
 
@@ -103,4 +109,49 @@ pub enum StoppedReason {
     InsufficientMaterial,
     ThreeTimesRepetition,
     NoChangeIn50Moves,
+}
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+
+    #[rstest(
+    game_config_testing_white, next_move_str, expected_is_sufficient_material,
+    case("white ♔e1 ♜f1 ♚e8", "e1-f1", false),
+    case("white ♔e1 ♘b1 ♘g1 ♚e8 ♞b8 ♞g8", "e1-f1", false),
+    case("white ♔e1 ♘b1 ♘g1 ♚e8 ♞b8 ♞g8 ♞h8", "e1-f1", true),
+    case("white ♔e1 ♚e8 ♞b8 ♞g8 ♞h8", "e1-f1", true),
+    case("white ♔e1 ♗b1 ♚e8 ♞b8 ♞g8", "e1-f1", false),
+    case("white ♔e1 ♗b1 ♚e8 ♝g8", "e1-f1", false),
+    case("white ♔e1 ♗b1 ♘g8 ♚e8", "e1-f1", true),
+    case("white ♔e1 ♗b1 ♗g8 ♚e8", "e1-f1", true),
+    case("white ♔e1 ♖b1 ♚e8", "e1-f1", true),
+    case("white ♔e1 ♛b1 ♚e8", "e1-f1", true),
+    case("white ♔e1 ♙b2 ♚e8", "e1-f1", true),
+    case("white ♔e1 ♙a2 ♙b2 ♙c2 ♙d2 ♙e2 ♙f2 ♚e8", "e1-f1", true),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    #[test]
+    fn test_game_ends_bc_insufficient_material(
+        game_config_testing_white: &str,
+        next_move_str: &str,
+        expected_is_sufficient_material: bool,
+    ) {
+        fn is_sufficient_material_left(move_result: MoveResult) -> bool {
+            match move_result {
+                MoveResult::Stopped(StoppedReason::InsufficientMaterial) => {false}
+                _ => {true}
+            }
+        }
+
+        let game = game_config_testing_white.parse::<Game>().unwrap();
+        let next_move = next_move_str.parse::<Move>().unwrap();
+        let move_result = game.play(&next_move);
+        assert_eq!(is_sufficient_material_left(move_result), expected_is_sufficient_material);
+    }
 }

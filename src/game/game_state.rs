@@ -1,6 +1,7 @@
 use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind, Direction, Deactivatable};
 use crate::figure::{Figure, FigureType, FigureAndPosition};
 use crate::game::{Board};
+use crate::figure::functions::check_search::is_king_in_check;
 use tinyvec::*;
 use std::{fmt,str};
 
@@ -188,26 +189,14 @@ impl GameState {
             is_black_king_side_castling_still_possible: is_black_king_side_castling_possible,
         };
 
-        if game_state.can_passive_players_king_be_caught() {
-            return Err(ChessError{
-                msg: format!("passive king is in check {}", game_state.board),
-                kind: ErrorKind::IllegalConfiguration
-            })
-        }
-
         Ok(game_state)
     }
 
     pub fn toggle_colors(&self) -> GameState {
-        fn toggle_pos(pos: Position) -> Position {
-            return Position::new_unchecked(
-                pos.column, 7-pos.row,
-            )
-        }
         fn toggle_figures_on_board_to(color: Color, figure_array: [Option<(FigureType, Position)>; 16], board: &mut Board) {
             for opt_figure_type_and_pos in figure_array.iter() {
                 if let Some((figure_type, pos)) = opt_figure_type_and_pos {
-                    board.set_figure(toggle_pos(*pos), Figure{ fig_type: *figure_type, color });
+                    board.set_figure(pos.toggle_row(), Figure{ fig_type: *figure_type, color });
                 } else {
                     break;
                 }
@@ -221,9 +210,9 @@ impl GameState {
         return GameState {
             board: toggled_board,
             turn_by: self.turn_by.toggle(),
-            white_king_pos: toggle_pos(self.white_king_pos),
-            black_king_pos: toggle_pos(self.black_king_pos),
-            en_passant_intercept_pos: self.en_passant_intercept_pos.map(|pos|{toggle_pos(pos)}),
+            white_king_pos: self.white_king_pos.toggle_row(),
+            black_king_pos: self.black_king_pos.toggle_row(),
+            en_passant_intercept_pos: self.en_passant_intercept_pos.map(|pos|{pos.toggle_row()}),
             is_white_queen_side_castling_still_possible: self.is_black_queen_side_castling_still_possible,
             is_white_king_side_castling_still_possible: self.is_black_king_side_castling_still_possible,
             is_black_queen_side_castling_still_possible: self.is_white_queen_side_castling_still_possible,
@@ -395,9 +384,23 @@ impl GameState {
         }
     }
 
-    pub fn can_passive_players_king_be_caught(&self) -> bool {
-        //TODO
-        false
+    pub fn get_passive_king_pos(&self) -> Position {
+        match self.turn_by {
+            Color::Black => {self.white_king_pos}
+            Color::White => {self.black_king_pos}
+        }
+    }
+
+    pub fn is_active_king_in_check(&self) -> bool {
+        let king_pos = match self.turn_by {
+            Color::Black => self.white_king_pos,
+            Color::White => self.black_king_pos,
+        };
+        is_king_in_check(king_pos, self.turn_by, &self.board)
+    }
+
+    pub fn contains_sufficient_material_to_continue(&self) -> bool {
+        self.board.contains_sufficient_material_to_continue()
     }
 }
 

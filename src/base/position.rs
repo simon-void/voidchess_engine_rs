@@ -112,6 +112,20 @@ impl Position {
     ) -> KnightPosIterator<'b> {
         KnightPosIterator::new(*self, knight_color, board)
     }
+
+    pub fn is_on_ground_row(&self, color: Color) -> bool {
+        return match color {
+            Color::Black if self.row == 7 => true,
+            Color::White if self.row == 0 => true,
+            _ => false,
+        }
+    }
+
+    pub fn toggle_row(&self) -> Position {
+        return Position::new_unchecked(
+            self.column, 7-self.row,
+        )
+    }
 }
 
 impl str::FromStr for Position {

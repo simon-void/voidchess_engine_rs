@@ -19,6 +19,14 @@ impl Move {
             pawn_promo: PawnPromotion::No,
         }
     }
+
+    pub fn toggle_rows(&self) -> Move {
+        Move {
+            from: self.from.toggle_row(),
+            to: self.to.toggle_row(),
+            pawn_promo: self.pawn_promo,
+        }
+    }
 }
 
 impl str::FromStr for Move {

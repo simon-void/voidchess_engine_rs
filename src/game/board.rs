@@ -23,11 +23,13 @@ static BLACK_KING: Figure = Figure {fig_type:FigureType::King, color: Color::Bla
 #[derive(Clone, Debug)]
 pub struct Board {
     state: [Option<Figure>; 64],
+    number_of_figures: isize,
 }
 
 impl Board {
     pub fn classic() -> Board {
         Board {
+            number_of_figures: 16,
             state: [
                 Some(WHITE_QUEEN_SIDE_ROOK),
                 Some(WHITE_KNIGHT),
@@ -59,6 +61,7 @@ impl Board {
 
     pub fn empty() -> Board {
         Board {
+            number_of_figures: 0,
             state: [None; 64],
         }
     }
@@ -117,11 +120,66 @@ impl Board {
         // }
         let old_content = self.state[pos.index];
         self.state[pos.index] = Some(figure);
-        old_content.is_some()
+
+        if old_content.is_some() {
+            true
+        } else {
+            self.number_of_figures = self.number_of_figures + 1;
+            false
+        }
     }
 
     pub fn clear_field(&mut self, pos: Position) {
+        self.number_of_figures = self.number_of_figures - 1;
         self.state[pos.index] = None;
+    }
+
+    pub fn contains_sufficient_material_to_continue(&self) -> bool {
+        if self.number_of_figures > 6 {
+            return true;
+        }
+
+        let mut white_knight_nr = 0;
+        let mut found_white_bishop = false;
+        let mut black_knight_nr = 0;
+        let mut found_black_bishop = false;
+
+        for state_index in USIZE_RANGE_063 {
+            if let Some(figure) = self.state[state_index] {
+                match figure.fig_type {
+                    FigureType::Pawn | FigureType::Rook | FigureType::Queen => {return true;}
+                    FigureType::Knight => {
+                        match figure.color {
+                            Color::Black => { black_knight_nr = black_knight_nr + 1; }
+                            Color::White => { white_knight_nr = white_knight_nr + 1; }
+                        }
+                    }
+                    FigureType::Bishop => {
+                        match figure.color {
+                            Color::Black => {
+                                // this is basically a black_bishop_nr == 2 check
+                                if found_black_bishop {
+                                    return true;
+                                }
+                                found_black_bishop = true;
+                            }
+                            Color::White => {
+                                // this is basically a black_bishop_nr == 2 check
+                                if found_white_bishop {
+                                    return true;
+                                }
+                                found_white_bishop = true;
+                            }
+                        }
+                    }
+                    FigureType::King => {}
+                }
+            }
+        }
+
+        (found_white_bishop && white_knight_nr != 0) ||
+            (found_black_bishop && black_knight_nr != 0) ||
+            (white_knight_nr>2) || (black_knight_nr>2)
     }
 
     pub fn is_empty(&self, pos: Position) -> bool {

@@ -2,7 +2,7 @@ use crate::base::{Color, Direction, Position};
 use crate::figure::FigureType;
 use crate::game::GameState;
 
-pub fn default_static_eval_for_white(game_state: &GameState) -> f64 {
+pub fn default_static_eval_for_white(game_state: &GameState) -> f32 {
     let (white_figures, black_figures) = game_state.board.get_white_and_black_figures();
     let white_value = get_value(game_state, white_figures, Color::White);
     let black_value = get_value(game_state, black_figures, Color::Black);
@@ -10,7 +10,7 @@ pub fn default_static_eval_for_white(game_state: &GameState) -> f64 {
     white_value - black_value
 }
 
-fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 16], color: Color) -> f64 {
+fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 16], color: Color) -> f32 {
     let mut value = 0.0;
     let (backward_left, _, backward_right) = Direction::forward_directions(color.toggle());
     for opt_fig_data in figures.iter() {
@@ -40,7 +40,7 @@ fn get_pawn_value(
     color: Color,
     backward_left: Direction,
     backward_right: Direction,
-) -> f64 {
+) -> f32 {
     fn is_protected(
         game_state: &GameState,
         pawn_pos: &Position,
@@ -66,7 +66,7 @@ fn get_pawn_value(
     let steps_taken = match color {
         Color::White => pawn_pos.row - 1,
         Color::Black => 6 -pawn_pos.row,
-    } as f64;
+    } as f32;
     let steps_value = if is_protected(game_state, pawn_pos, color, backward_left, backward_right) {
         0.2
     } else {

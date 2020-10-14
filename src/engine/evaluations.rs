@@ -4,10 +4,10 @@ use crate::base::Move;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Evaluation {
-    WinIn(usize),
-    Numeric(f64),
+    WinIn(u8),
+    Numeric(f32),
     Draw(DrawReason),
-    LooseIn(usize),
+    LooseIn(u8, f32),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -32,7 +32,7 @@ impl PartialOrd for Evaluation {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         fn rank(this: &Evaluation) -> usize {
             match this {
-                Evaluation::LooseIn(_) => 1,
+                Evaluation::LooseIn(_, _) => 1,
                 Evaluation::Numeric(x) if x.is_sign_negative() => 2,
                 Evaluation::Draw(_) => 3,
                 Evaluation::Numeric(_) => 4,
@@ -51,13 +51,13 @@ impl PartialOrd for Evaluation {
                             None
                         }
                     },
-                    Evaluation::Numeric(self_eval) => {
-                        if let Evaluation::Numeric(other_eval) = other {
-                            self_eval.partial_cmp(other_eval)
+                    Evaluation::Numeric(self_num_eval) => {
+                        if let Evaluation::Numeric(other_num_eval) = other {
+                            self_num_eval.partial_cmp(other_num_eval)
                         } else {
                             None
                         }
-                    },
+                    }
                     Evaluation::Draw(self_draw_reason) => {
                         if let Evaluation::Draw(other_draw_reason) = other {
                             Some(self_draw_reason.cmp(other_draw_reason))
@@ -65,9 +65,14 @@ impl PartialOrd for Evaluation {
                             None
                         }
                     },
-                    Evaluation::LooseIn(self_loose_in_nr) => {
-                        if let Evaluation::LooseIn(other_loose_in_nr) = other {
-                            self_loose_in_nr.partial_cmp(other_loose_in_nr)
+                    Evaluation::LooseIn(self_loose_in_nr, self_num_eval) => {
+                        if let Evaluation::LooseIn(other_loose_in_nr, other_num_eval) = other {
+                            let loose_in_nr_order = self_loose_in_nr.partial_cmp(other_loose_in_nr);
+                            if let Some(Ordering::Equal) = loose_in_nr_order {
+                                self_loose_in_nr.partial_cmp(other_loose_in_nr)
+                            } else {
+                                loose_in_nr_order
+                            }
                         } else {
                             None
                         }
@@ -117,3 +122,20 @@ pub struct EvaluatedMove {
 // }
 //
 // pub type EvaluatedMoves = TinyVec<EvaluatedMoveArray>;
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // use rstest::*;
+    // use crate::engine::evaluations::*;
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+
+    // #[test]
+    // fn test_Evaluation_order() {
+    //      let evaluations: Vec<Evaluation> = vec![
+    //      ];
+    // }
+}

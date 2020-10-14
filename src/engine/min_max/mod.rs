@@ -15,9 +15,9 @@ fn get_min(old_game: &Game, a_move: &Move, half_step: usize, evaluate_for: Color
             Evaluation::Draw(DrawReason::from(reason))
         },
         MoveResult::Ongoing(game, was_figure_caught) => {
-            if game.can_passive_players_king_be_caught() {
-                return Evaluation::LooseIn(half_step)
-            }
+            // if game.can_passive_players_king_be_caught() {
+            //     return Evaluation::LooseIn(half_step as u32, 0.0)
+            // }
 
             todo!();
         }

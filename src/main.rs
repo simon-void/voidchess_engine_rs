@@ -14,4 +14,7 @@ fn main() {
         Ok(game) => {print!("configured game:\n{}", game);}
         Err(chess_error) => {println!("chess error: {:?}", chess_error)}
     }
+
+    // use std::mem;
+    // println!("size of pos: {}", mem::size_of::<Position>())
 }

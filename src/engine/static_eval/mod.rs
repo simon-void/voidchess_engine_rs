@@ -14,5 +14,5 @@ pub fn static_eval(game_state: &GameState, eval_type: StaticEvalType, for_color:
         StaticEvalType::Default => default_static_eval_for_white(game_state),
     };
     let value = if for_color==Color::White {eval_for_white} else {-eval_for_white};
-    Evaluation::Numeric(value)
+    Evaluation::Numeric(value as f32)
 }

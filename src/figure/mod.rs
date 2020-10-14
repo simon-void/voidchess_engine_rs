@@ -1,4 +1,4 @@
-mod functions;
+pub(crate) mod functions;
 
 use std::fmt;
 use crate::base::*;
