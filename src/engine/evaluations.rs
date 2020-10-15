@@ -7,7 +7,7 @@ pub enum Evaluation {
     WinIn(u8),
     Numeric(f32),
     Draw(DrawReason),
-    LooseIn(u8, f32),
+    LoseIn(u8, f32),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -16,12 +16,6 @@ pub enum DrawReason {
     ThreeTimesRepetition,
     InsufficientMaterial,
     StaleMate,
-}
-
-pub fn xsort_evaluations_best_first(evaluations: &mut Vec<Evaluation>) {
-    evaluations.sort_unstable_by(|a, b|{
-        (*b).partial_cmp(a).unwrap()
-    });
 }
 
 pub fn sort_evaluations_best_first(eval1: &Evaluation, eval2: &Evaluation) -> Ordering {
@@ -42,7 +36,7 @@ impl PartialOrd for Evaluation {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         fn rank(this: &Evaluation) -> usize {
             match this {
-                Evaluation::LooseIn(_, _) => 1,
+                Evaluation::LoseIn(_, _) => 1,
                 Evaluation::Numeric(x) if x.is_sign_negative() => 2,
                 Evaluation::Draw(_) => 3,
                 Evaluation::Numeric(_) => 4,
@@ -75,8 +69,8 @@ impl PartialOrd for Evaluation {
                             None
                         }
                     },
-                    Evaluation::LooseIn(self_loose_in_nr, self_num_eval) => {
-                        if let Evaluation::LooseIn(other_loose_in_nr, other_num_eval) = other {
+                    Evaluation::LoseIn(self_loose_in_nr, self_num_eval) => {
+                        if let Evaluation::LoseIn(other_loose_in_nr, other_num_eval) = other {
                             let loose_in_nr_order = self_loose_in_nr.partial_cmp(other_loose_in_nr);
                             if let Some(Ordering::Equal) = loose_in_nr_order {
                                 self_num_eval.partial_cmp(other_num_eval)
@@ -156,11 +150,11 @@ mod tests {
         let e09 = Evaluation::Draw(DrawReason::NoChangeIn50Moves);
         let e10 = Evaluation::Numeric(-0.2);
         let e11 = Evaluation::Numeric(-3.0);
-        let e12 = Evaluation::LooseIn(4, -5.0);
-        let e13 = Evaluation::LooseIn(3, 5.0);
-        let e14 = Evaluation::LooseIn(3, 3.0);
-        let e15 = Evaluation::LooseIn(3, -7.0);
-        let e16 = Evaluation::LooseIn(1, 1.0);
+        let e12 = Evaluation::LoseIn(4, -5.0);
+        let e13 = Evaluation::LoseIn(3, 5.0);
+        let e14 = Evaluation::LoseIn(3, 3.0);
+        let e15 = Evaluation::LoseIn(3, -7.0);
+        let e16 = Evaluation::LoseIn(1, 1.0);
 
          let mut actual_sorted_evaluations: Vec<Evaluation> = vec![
              e06, e02, e16, e04, e01, e07, e14, e08, e03, e09, e05, e15, e13, e11, e10, e12,

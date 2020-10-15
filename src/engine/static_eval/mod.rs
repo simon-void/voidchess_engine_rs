@@ -5,14 +5,17 @@ use crate::game::GameState;
 
 mod default;
 
+#[derive(Debug, Copy, Clone)]
 pub enum StaticEvalType {
-    Default,
+    always_null, // for testing
+    default,
 }
 
-pub fn static_eval(game_state: &GameState, eval_type: StaticEvalType, for_color: Color) -> Evaluation {
+pub fn static_eval(game_state: &GameState, eval_type: StaticEvalType, for_color: Color) -> f32 {
+    use self::StaticEvalType;
     let eval_for_white = match eval_type {
-        StaticEvalType::Default => default_static_eval_for_white(game_state),
+        Null => 0.0,
+        Default => default_static_eval_for_white(game_state),
     };
-    let value = if for_color==Color::White {eval_for_white} else {-eval_for_white};
-    Evaluation::Numeric(value as f32)
+    if for_color==Color::White {eval_for_white} else {-eval_for_white}
 }

@@ -46,6 +46,10 @@ impl Game {
             reachable_move.to == passive_king_pos
         })
     }
+
+    pub fn get_game_state(&self) -> &GameState {
+        &self.latest_state
+    }
 }
 
 impl fmt::Display for Game {
