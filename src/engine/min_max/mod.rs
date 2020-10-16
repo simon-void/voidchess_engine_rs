@@ -5,7 +5,17 @@ use crate::engine::static_eval::{static_eval, StaticEvalType};
 
 mod pruner;
 
-pub fn evaluate_move(old_game: &Game, a_move: &Move, move_depth: usize, evaluate_for: Color, eval_type: StaticEvalType) -> Evaluation {
+#[derive(Debug, Copy, Clone)]
+pub enum Mode {
+    Test, // for testing
+    Live,
+}
+
+pub fn evaluate_move(old_game: &Game, a_move: &Move, move_depth: usize, evaluate_for: Color, mode: Mode) -> Evaluation {
+    let eval_type = match mode {
+        Mode::Test => {StaticEvalType::AlwaysNull}
+        Mode::Live => {StaticEvalType::Default}
+    };
     let move_result = old_game.play(a_move);
     return match move_result {
         MoveResult::Stopped(reason) => {
@@ -34,7 +44,7 @@ fn get_min(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth
         MoveResult::Ongoing(game, was_figure_caught) => {
             let new_half_step = old_half_step + 1;
             if game.is_passive_king_in_check() {
-                return Evaluation::WinIn(new_half_step as u8);
+                return Evaluation::WinIn((new_half_step/2) as u8);
             }
             if new_half_step == half_step_depth {
                 return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
@@ -72,7 +82,7 @@ fn get_max(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth
 }
 
 fn get_lose_eval(game: &Game, lost_after_nr_of_half_steps: usize, evaluate_for: Color, eval_type: StaticEvalType) -> Evaluation {
-    Evaluation::LoseIn(lost_after_nr_of_half_steps as u8, static_eval(game.get_game_state(), eval_type, evaluate_for))
+    Evaluation::LoseIn((lost_after_nr_of_half_steps/2) as u8, static_eval(game.get_game_state(), eval_type, evaluate_for))
 }
 
 //------------------------------Tests------------------------
@@ -100,7 +110,7 @@ mod tests {
     ) {
         let game = game_config_testing_white.parse::<Game>().unwrap();
         let next_move = next_move_str.parse::<Move>().unwrap();
-        let actual_evaluation = evaluate_move(&game, &next_move, 1, Color::White, StaticEvalType::always_null);
+        let actual_evaluation = evaluate_move(&game, &next_move, 1, Color::White, Mode::Test);
         assert_eq!(actual_evaluation, expected_evaluation);
     }
 }
