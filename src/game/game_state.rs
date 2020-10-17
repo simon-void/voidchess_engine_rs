@@ -172,10 +172,10 @@ impl GameState {
         let is_black_king_side_rook_on_starting_pos = board_contains_rook_at(
             BLACK_KING_SIDE_ROOK_STARTING_POS, Color::White, &board,
         );
-        let mut is_white_queen_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_queen_side_rook_on_starting_pos);
-        let mut is_white_king_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_king_side_rook_on_starting_pos);
-        let mut is_black_queen_side_castling_possible = Deactivatable::new(is_black_king_on_starting_pos && is_black_queen_side_rook_on_starting_pos);
-        let mut is_black_king_side_castling_possible = Deactivatable::new(is_black_king_on_starting_pos && is_black_king_side_rook_on_starting_pos);
+        let is_white_queen_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_queen_side_rook_on_starting_pos);
+        let is_white_king_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_king_side_rook_on_starting_pos);
+        let is_black_queen_side_castling_possible = Deactivatable::new(is_black_king_on_starting_pos && is_black_queen_side_rook_on_starting_pos);
+        let is_black_king_side_castling_possible = Deactivatable::new(is_black_king_on_starting_pos && is_black_king_side_rook_on_starting_pos);
 
         let game_state = GameState {
             board,
@@ -412,7 +412,7 @@ impl str::FromStr for GameState {
         if trimmed_desc.is_empty() {
             return Ok(GameState::classic())
         }
-        let mut token_iter = trimmed_desc.split(" ").into_iter();
+        let token_iter = trimmed_desc.split(" ").into_iter();
 
         // let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
         let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains("-");

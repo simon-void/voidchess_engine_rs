@@ -5,23 +5,14 @@ use crate::engine::static_eval::{static_eval, StaticEvalType};
 
 mod pruner;
 
-#[derive(Debug, Copy, Clone)]
-pub enum Mode {
-    Test, // for testing
-    Live,
-}
-
-pub fn evaluate_move(old_game: &Game, a_move: &Move, move_depth: usize, evaluate_for: Color, mode: Mode) -> Evaluation {
-    let eval_type = match mode {
-        Mode::Test => {StaticEvalType::AlwaysNull}
-        Mode::Live => {StaticEvalType::Default}
-    };
+pub fn evaluate_move(old_game: &Game, a_move: &Move, move_depth: usize, evaluate_for: Color) -> Evaluation {
+    let eval_type = StaticEvalType::Default;
     let move_result = old_game.play(a_move);
     return match move_result {
         MoveResult::Stopped(reason) => {
             Evaluation::Draw(DrawReason::from(reason))
         }
-        MoveResult::Ongoing(game, was_figure_caught) => {
+        MoveResult::Ongoing(game, _was_figure_caught) => {
             if game.is_passive_king_in_check() {
                 return get_lose_eval(&game, 0, evaluate_for, eval_type);
             }
@@ -41,7 +32,7 @@ fn get_min(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth
         MoveResult::Stopped(reason) => {
             Evaluation::Draw(DrawReason::from(reason))
         }
-        MoveResult::Ongoing(game, was_figure_caught) => {
+        MoveResult::Ongoing(game, _was_figure_caught) => {
             let new_half_step = old_half_step + 1;
             if game.is_passive_king_in_check() {
                 return Evaluation::WinIn((new_half_step/2) as u8);
@@ -64,7 +55,7 @@ fn get_max(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth
         MoveResult::Stopped(reason) => {
             Evaluation::Draw(DrawReason::from(reason))
         }
-        MoveResult::Ongoing(game, was_figure_caught) => {
+        MoveResult::Ongoing(game, _was_figure_caught) => {
             let new_half_step = old_half_step + 1;
             if game.is_passive_king_in_check() {
                 return get_lose_eval(&game, new_half_step, evaluate_for, eval_type);
@@ -91,26 +82,31 @@ fn get_lose_eval(game: &Game, lost_after_nr_of_half_steps: usize, evaluate_for: 
 mod tests {
     use super::*;
     use rstest::*;
+    use crate::engine::evaluations::*;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 
     #[rstest(
     game_config_testing_white, next_move_str, expected_evaluation,
-    case("white ♔b6 ♙a7 ♚a8", "b6-a6", Evaluation::Draw(DrawReason::StaleMate)),
-    case("white ♔b6 ♙a7 ♚a8", "b6-c7", Evaluation::Draw(DrawReason::InsufficientMaterial)),
-    case("white ♔d6 ♖a7 ♚d8", "a7-a8", Evaluation::WinIn(1)),
-    case("white ♔f8 ♜a7 ♚e6", "f8-e8", Evaluation::LoseIn(1, 0.0)),
+    case("white ♔b6 ♙a7 ♚a8", "b6-a6", RoughEvaluation::Draw(DrawReason::StaleMate)),
+    case("white ♔b6 ♙a7 ♚a8", "b6-c7", RoughEvaluation::Draw(DrawReason::InsufficientMaterial)),
+    case("white ♔d6 ♖a7 ♚d8", "a7-a8", RoughEvaluation::WinIn(1)),
+    case("white ♔f8 ♜a7 ♚e6", "f8-e8", RoughEvaluation::LoseIn(1)),
     ::trace //This leads to the arguments being printed in front of the test result.
     )]
     #[test]
-    fn test_game_ends_bc_insufficient_material(
+    fn test_evaluate_move(
         game_config_testing_white: &str,
         next_move_str: &str,
-        expected_evaluation: Evaluation,
+        expected_evaluation: RoughEvaluation,
     ) {
         let game = game_config_testing_white.parse::<Game>().unwrap();
         let next_move = next_move_str.parse::<Move>().unwrap();
-        let actual_evaluation = evaluate_move(&game, &next_move, 1, Color::White, Mode::Test);
-        assert_eq!(actual_evaluation, expected_evaluation);
+        let actual_evaluation = evaluate_move(&game, &next_move, 1, Color::White);
+        assert_eq!(
+            RoughEvaluation::of(&actual_evaluation),
+            expected_evaluation,
+            "original evaluation: {:?}", actual_evaluation
+        );
     }
 }
