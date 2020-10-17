@@ -210,8 +210,8 @@ impl GameState {
         return GameState {
             board: toggled_board,
             turn_by: self.turn_by.toggle(),
-            white_king_pos: self.white_king_pos.toggle_row(),
-            black_king_pos: self.black_king_pos.toggle_row(),
+            white_king_pos: self.black_king_pos.toggle_row(),
+            black_king_pos: self.white_king_pos.toggle_row(),
             en_passant_intercept_pos: self.en_passant_intercept_pos.map(|pos|{pos.toggle_row()}),
             is_white_queen_side_castling_still_possible: self.is_black_queen_side_castling_still_possible,
             is_white_king_side_castling_still_possible: self.is_black_king_side_castling_still_possible,
@@ -239,18 +239,21 @@ impl GameState {
         move_collector
     }
 
-    pub fn do_move(&self, next_move: Move) -> GameState {
+    /**
+    * returns the game_state after the move got applied and if a figure got caught while doing so.
+    */
+    pub fn do_move(&self, next_move: Move) -> (GameState, bool) {
         debug_assert!(
             next_move.to != self.white_king_pos && next_move.to != self.black_king_pos,
             "move {} would capture a king on game {}", next_move, self.board
         );
         debug_assert!(
             self.board.contains_figure(self.white_king_pos, FigureType::King, Color::White),
-            "couldn't find white kind at white_king_pos {} on board {}", self.white_king_pos, self.board
+            "couldn't find white king at white_king_pos {} on board {} (next_move {})", self.white_king_pos, self.board, next_move
         );
         debug_assert!(
             self.board.contains_figure(self.black_king_pos, FigureType::King, Color::Black),
-            "couldn't find black kind at black_king_pos {} on board {}", self.black_king_pos, self.board
+            "couldn't find black king at black_king_pos {} on board {} (next_move {})", self.black_king_pos, self.board, next_move
         );
 
         let mut new_board = self.board.clone();
@@ -261,23 +264,26 @@ impl GameState {
         let mut new_is_black_queen_side_castling_possible = self.is_black_queen_side_castling_still_possible;
         let mut new_is_black_king_side_castling_possible = self.is_black_king_side_castling_still_possible;
 
-        if next_move.from == WHITE_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_QUEEN_SIDE_ROOK_STARTING_POS {
-            new_is_white_queen_side_castling_possible.deactivate()
-        }
-        if next_move.from == WHITE_KING_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_KING_SIDE_ROOK_STARTING_POS {
-            new_is_white_king_side_castling_possible.deactivate()
-        }
-        if next_move.from == BLACK_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_QUEEN_SIDE_ROOK_STARTING_POS {
-            new_is_black_queen_side_castling_possible.deactivate()
-        }
-        if next_move.from == BLACK_KING_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_KING_SIDE_ROOK_STARTING_POS {
-            new_is_black_king_side_castling_possible.deactivate()
+        {
+            if next_move.from == WHITE_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_QUEEN_SIDE_ROOK_STARTING_POS {
+                new_is_white_queen_side_castling_possible.deactivate()
+            }
+            if next_move.from == WHITE_KING_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_KING_SIDE_ROOK_STARTING_POS {
+                new_is_white_king_side_castling_possible.deactivate()
+            }
+            if next_move.from == BLACK_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_QUEEN_SIDE_ROOK_STARTING_POS {
+                new_is_black_queen_side_castling_possible.deactivate()
+            }
+            if next_move.from == BLACK_KING_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_KING_SIDE_ROOK_STARTING_POS {
+                new_is_black_king_side_castling_possible.deactivate()
+            }
         }
 
         let (
             new_white_king_pos,
             new_black_king_pos,
             new_en_passant_intercept_pos,
+            figure_gets_caught,
         ) = match moving_figure.fig_type {
             FigureType::King => {
                 let is_castling = if let Some(figure_to_be_caught) = self.board.get_figure(next_move.to) {
@@ -286,11 +292,12 @@ impl GameState {
                     false
                 };
                 let new_king_pos: Position;
-                if is_castling {
+                let figure_gets_caught = if is_castling {
                     new_king_pos = do_castling_move(&mut new_board, next_move);
+                    false
                 } else {
-                    do_normal_move(&mut new_board, next_move);
                     new_king_pos = next_move.to;
+                    do_normal_move(&mut new_board, next_move)
                 };
 
                 match moving_figure.color {
@@ -301,6 +308,7 @@ impl GameState {
                             new_king_pos,
                             self.black_king_pos,
                             None,
+                            figure_gets_caught,
                         )
                     }
                     Color::Black => {
@@ -310,6 +318,7 @@ impl GameState {
                             self.white_king_pos,
                             new_king_pos,
                             None,
+                            figure_gets_caught,
                         )
                     }
                 }
@@ -329,10 +338,11 @@ impl GameState {
 
                 match compute_pawn_move_type(self, next_move) {
                     PawnMoveType::SingleStep => {
-                        do_normal_move(&mut new_board, next_move);
+                        let figure_gets_caught = do_normal_move(&mut new_board, next_move);
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
+                            figure_gets_caught,
                         )
                     },
                     PawnMoveType::DoubleStep => {
@@ -343,6 +353,7 @@ impl GameState {
                                 next_move.to.column,
                                 (next_move.from.row + next_move.to.row) / 2,
                             )),
+                            false,
                         )
                     },
                     PawnMoveType::EnPassantIntercept => {
@@ -350,21 +361,23 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
+                            true,
                         )
                     },
                 }
             },
             _ => {
-                do_normal_move(&mut new_board, next_move);
+                let figure_gets_caught = do_normal_move(&mut new_board, next_move);
                 (
                     self.white_king_pos,
                     self.black_king_pos,
                     None,
+                    figure_gets_caught,
                 )
             },
         };
 
-        GameState {
+        (GameState {
             board: new_board,
             turn_by: self.turn_by.toggle(),
             white_king_pos: new_white_king_pos,
@@ -374,7 +387,9 @@ impl GameState {
             is_white_king_side_castling_still_possible: new_is_white_king_side_castling_possible,
             is_black_queen_side_castling_still_possible: new_is_black_queen_side_castling_possible,
             is_black_king_side_castling_still_possible: new_is_black_king_side_castling_possible,
-        }
+        },
+         figure_gets_caught,
+        )
     }
 
     pub fn get_passive_kings_pos(&self) -> Position {
@@ -428,7 +443,8 @@ fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<GameState, C
     let mut game_state = GameState::classic();
     for token in token_iter {
         let a_move = token.parse::<Move>()?;
-        game_state = game_state.do_move(a_move);
+        let (new_game_state, _) = game_state.do_move(a_move);
+        game_state = new_game_state;
     }
     Ok(game_state)
 }
@@ -471,6 +487,9 @@ fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<GameStat
     Ok(game_state)
 }
 
+/**
+* returns if a figure gets caught by this move.
+*/
 fn do_normal_move(
     new_board: &mut Board,
     next_move: Move,
@@ -578,5 +597,52 @@ mod tests {
 
         let black_nr_of_reachable_moves = game_state.toggle_colors().get_reachable_moves().len();
         assert_eq!(black_nr_of_reachable_moves, expected_nr_of_reachable_moves, "nr of reachable moves");
+    }
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+
+    #[rstest(
+    game_config_testing, next_move_str, expected_catches_figure,
+    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "e1-d1", false),
+    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "e1-h1", false),
+    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "a2-a3", false),
+    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "a2-a4", false),
+    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "h1-h2", true),
+    case("b2-b4 a7-a6 b4-b5 c7-c5", "b5-c6", true),
+    case("b2-b4 a7-a6 b4-b5 c7-c5", "b5-a6", true),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_do_move_catches_figure(
+        game_config_testing: &str,
+        next_move_str: &str,
+        expected_catches_figure: bool,
+    ) {
+        let game_state = game_config_testing.parse::<GameState>().unwrap();
+        let white_move = next_move_str.parse::<Move>().unwrap();
+        let ( _, actual_white_has_caught_figure) = game_state.do_move(white_move);
+        assert_eq!(actual_white_has_caught_figure, expected_catches_figure, "white catches figure");
+
+
+        let toggled_game_state = game_state.toggle_colors();
+        let ( _, actual_black_has_caught_figure) = toggled_game_state.do_move(white_move.toggle_rows());
+        assert_eq!(actual_black_has_caught_figure, expected_catches_figure, "black catches figure");
+    }
+
+    #[test]
+    fn test_game_state_toggle_colors() {
+        let game_state = "white ♔b1 ♜h2 Eh6 ♟h5 ♚g7".parse::<GameState>().unwrap();
+        let white_move = "b1-c1".parse::<Move>().unwrap();
+        assert_eq!(game_state.turn_by, Color::White);
+        assert_eq!(game_state.get_passive_king_pos(), "g7".parse::<Position>().unwrap());
+        assert_eq!(game_state.en_passant_intercept_pos.unwrap(), "h6".parse::<Position>().unwrap());
+        // do_move includes some runtime validation
+        game_state.do_move(white_move);
+
+
+        let toggled_game_state = game_state.toggle_colors();
+        assert_eq!(toggled_game_state.turn_by, Color::Black);
+        assert_eq!(toggled_game_state.get_passive_king_pos(), "g2".parse::<Position>().unwrap(), "game_state {}", &toggled_game_state);
+        assert_eq!(toggled_game_state.en_passant_intercept_pos.unwrap(), "h3".parse::<Position>().unwrap(), "game_state {}", &toggled_game_state);
+        toggled_game_state.do_move(white_move.toggle_rows());
     }
 }

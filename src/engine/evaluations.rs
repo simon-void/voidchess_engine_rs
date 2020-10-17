@@ -22,16 +22,6 @@ pub fn sort_evaluations_best_first(eval1: &Evaluation, eval2: &Evaluation) -> Or
     (*eval2).partial_cmp(eval1).unwrap()
 }
 
-impl DrawReason {
-    pub fn from(reason: StoppedReason) -> DrawReason {
-        match reason {
-            StoppedReason::InsufficientMaterial => DrawReason::InsufficientMaterial,
-            StoppedReason::ThreeTimesRepetition => DrawReason::ThreeTimesRepetition,
-            StoppedReason::NoChangeIn50Moves => DrawReason::ThreeTimesRepetition,
-        }
-    }
-}
-
 impl PartialOrd for Evaluation {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         fn rank(this: &Evaluation) -> usize {
@@ -101,10 +91,10 @@ pub enum RoughEvaluation {
 }
 
 impl RoughEvaluation {
-    pub(crate) fn of(eval: &Evaluation) -> RoughEvaluation {
+    pub(crate) fn from(eval: &Evaluation) -> RoughEvaluation {
         match eval {
-            Evaluation::WinIn(depth) => RoughEvaluation::WinIn(*depth),
-            Evaluation::LoseIn(depth, _) => RoughEvaluation::LoseIn(*depth),
+            Evaluation::WinIn(depth) => RoughEvaluation::WinIn(*depth/2),
+            Evaluation::LoseIn(depth, _) => RoughEvaluation::LoseIn((*depth+1)/2),
             Evaluation::Draw(reason) => RoughEvaluation::Draw(*reason),
             Evaluation::Numeric(value) => {
                 if *value>0.0 {
