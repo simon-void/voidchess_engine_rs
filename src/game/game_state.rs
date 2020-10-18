@@ -48,7 +48,7 @@ impl GameState {
             if field_was_already_in_use {
                 return Err(ChessError{
                     msg: format!("multiple figures placed on {}", figure_and_pos.pos),
-                    kind: ErrorKind::IllegalConfiguration
+                    kind: ErrorKind::IllegalConfig
                 })
             }
             match figure_and_pos.figure.fig_type {
@@ -57,7 +57,7 @@ impl GameState {
                     if pawn_pos_row==0 || pawn_pos_row==7 {
                         return Err(ChessError{
                             msg: format!("can't place a pawn on {}", figure_and_pos.pos),
-                            kind: ErrorKind::IllegalConfiguration
+                            kind: ErrorKind::IllegalConfig
                         })
                     }
                 },
@@ -67,7 +67,7 @@ impl GameState {
                             if opt_white_king_pos.is_some() {
                                 return Err(ChessError{
                                     msg: format!("can't place a pawn on {}. That row isn't reachable for a pawn.", figure_and_pos.pos),
-                                    kind: ErrorKind::IllegalConfiguration
+                                    kind: ErrorKind::IllegalConfig
                                 })
                             }
                             opt_white_king_pos = Some(figure_and_pos.pos);
@@ -76,7 +76,7 @@ impl GameState {
                             if opt_black_king_pos.is_some() {
                                 return Err(ChessError{
                                     msg: format!("can't place a pawn on {}. That row isn't reachable for a pawn.", figure_and_pos.pos),
-                                    kind: ErrorKind::IllegalConfiguration
+                                    kind: ErrorKind::IllegalConfig
                                 })
                             }
                             opt_black_king_pos = Some(figure_and_pos.pos);
@@ -104,7 +104,7 @@ impl GameState {
             if en_passant_pos.row != expected_row {
                 return Err(ChessError {
                     msg: format!("it's {}'s turn so the en-passant position has to be on the {}th row but it's {}.", turn_by, expected_row_in_text, en_passant_pos),
-                    kind: ErrorKind::IllegalConfiguration,
+                    kind: ErrorKind::IllegalConfig,
                 })
             }
             let forward_pawn_pos = en_passant_pos.step(forward_dir).unwrap();
@@ -117,7 +117,7 @@ impl GameState {
             if !contains_correct_pawn {
                 return Err(ChessError {
                     msg: format!("since {} is an en-passant pos, there should be a {} pawn on {} but isn't.", en_passant_pos, turn_by.toggle(), forward_pawn_pos),
-                    kind: ErrorKind::IllegalConfiguration,
+                    kind: ErrorKind::IllegalConfig,
                 })
             }
 
@@ -125,7 +125,7 @@ impl GameState {
             if !board.is_empty(backward_empty_pos) {
                 return Err(ChessError {
                     msg: format!("since {} is an en-passant pos, the position behind it ({}) should be empty but isn't.", en_passant_pos, backward_empty_pos),
-                    kind: ErrorKind::IllegalConfiguration,
+                    kind: ErrorKind::IllegalConfig,
                 })
             }
         }
@@ -135,7 +135,7 @@ impl GameState {
             None => {
                 return Err(ChessError{
                     msg: format!("no white king configured"),
-                    kind: ErrorKind::IllegalConfiguration
+                    kind: ErrorKind::IllegalConfig
                 })
             },
         };
@@ -144,7 +144,7 @@ impl GameState {
             None => {
                 return Err(ChessError{
                     msg: format!("no white king configured"),
-                    kind: ErrorKind::IllegalConfiguration
+                    kind: ErrorKind::IllegalConfig
                 })
             },
         };
@@ -457,7 +457,7 @@ fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<GameStat
         _ => {
             return Err(ChessError {
                 msg: format!("the first token has to be either 'white' or 'black' but was {}", first_token),
-                kind: ErrorKind::IllegalConfiguration,
+                kind: ErrorKind::IllegalConfig,
             })
         },
     };
@@ -473,7 +473,7 @@ fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<GameStat
             if let Some(old_en_passant_pos) = opt_en_passant_pos {
                 return Err(ChessError {
                     msg: format!("there are two en-passant tokens present (on {} and {}) but only one is allowed.", old_en_passant_pos, en_passant_pos),
-                    kind: ErrorKind::IllegalConfiguration,
+                    kind: ErrorKind::IllegalConfig,
                 })
             }
             opt_en_passant_pos = Some(en_passant_pos);

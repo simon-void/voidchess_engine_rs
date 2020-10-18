@@ -20,6 +20,10 @@ impl Move {
         }
     }
 
+    pub fn from_code(code: &str) -> Move {
+        code.parse::<Move>().expect(format!("illegal Move code: {}", code).as_str())
+    }
+
     pub fn toggle_rows(&self) -> Move {
         Move {
             from: self.from.toggle_row(),

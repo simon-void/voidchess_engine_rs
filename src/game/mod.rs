@@ -3,8 +3,9 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::base::{Moves, ChessError, ErrorKind, Move, Position};
+use crate::base::{Moves, ChessError, ErrorKind, Move, Position, MoveArray};
 use std::{str, fmt};
+use tinyvec::TinyVec;
 
 #[derive(Clone, Debug)]
 pub struct Game {
@@ -33,14 +34,20 @@ impl Game {
     pub fn play(&self, a_move: &Move) -> MoveResult {
         let (new_game_state, has_caught_figure) = self.latest_state.do_move(*a_move);
 
-        let passive_king_pos = new_game_state.get_passive_king_pos();
-        let reachable_moves = new_game_state.get_reachable_moves();
-        if reachable_moves.iter().any(|reachable_move| reachable_move.to == passive_king_pos) {
-            return MoveResult::Stopped(StoppedReason::KingInCheckAfterMove(new_game_state));
-        }
-        if !new_game_state.contains_sufficient_material_to_continue() {
-            return MoveResult::Stopped(StoppedReason::InsufficientMaterial);
-        }
+        let reachable_moves = match verify_game_state(&new_game_state) {
+            Ok(moves) => {moves}
+            Err(stoppedReason) => {
+                return MoveResult::Stopped(stoppedReason, new_game_state);
+            }
+        };
+        // let passive_king_pos = new_game_state.get_passive_king_pos();
+        // let reachable_moves = new_game_state.get_reachable_moves();
+        // if reachable_moves.iter().any(|reachable_move| reachable_move.to == passive_king_pos) {
+        //     return MoveResult::Stopped(StoppedReason::KingInCheckAfterMove(&new_game_state));
+        // }
+        // if !new_game_state.contains_sufficient_material_to_continue() {
+        //     return MoveResult::Stopped(StoppedReason::InsufficientMaterial);
+        // }
         let new_game = Game::from_state_and_reachable_moves(new_game_state, reachable_moves);
         let move_result = MoveResult::Ongoing(new_game, has_caught_figure);
         move_result
@@ -56,6 +63,10 @@ impl Game {
 
     pub fn is_passive_king_pos(&self, reachable_field: &Position) -> bool {
         *reachable_field == self.latest_state.get_passive_king_pos()
+    }
+
+    pub fn is_active_king_in_check(&self) -> bool {
+        self.latest_state.is_active_king_in_check()
     }
 }
 
@@ -80,10 +91,20 @@ impl str::FromStr for Game {
         if desc_contains_moves {
             game_by_moves_from_start(token_iter)
         } else {
-            let game_state = trimmed_desc.parse::<GameState>()?;
-            Ok(Game::from_state(game_state))
+            game_by_figures_on_board(trimmed_desc)
         }
     }
+}
+
+fn game_by_figures_on_board(trimmed_game_config: &str) -> Result<Game, ChessError> {
+    let game_state = trimmed_game_config.parse::<GameState>()?;
+    if let Err(stoppedReason) = verify_game_state(&game_state) {
+        return Err(ChessError {
+            msg: format!("game_state {} failed to pass verification: {:?}", game_state, &stoppedReason),
+            kind: ErrorKind::HighLevelErr(stoppedReason),
+        })
+    }
+    Ok(Game::from_state(game_state))
 }
 
 fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessError> {
@@ -95,15 +116,27 @@ fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessE
             MoveResult::Ongoing(new_game, _) => {
                 game = new_game;
             }
-            MoveResult::Stopped(reason) => {
+            MoveResult::Stopped(reason, _) => {
                 return Err(ChessError {
                     msg: format!("game has already ended after move {} because of {:?} in final state {}", a_move, reason, game),
-                    kind: ErrorKind::IllegalConfiguration,
+                    kind: ErrorKind::HighLevelErr(reason),
                 })
             }
         }
     }
     Ok(game)
+}
+
+fn verify_game_state(game_state: &GameState) -> Result<Moves, StoppedReason> {
+    let passive_king_pos = game_state.get_passive_king_pos();
+    let reachable_moves = game_state.get_reachable_moves();
+    if reachable_moves.iter().any(|reachable_move| reachable_move.to == passive_king_pos) {
+        return Err(StoppedReason::KingInCheckAfterMove);
+    }
+    if !game_state.contains_sufficient_material_to_continue() {
+        return Err(StoppedReason::InsufficientMaterial);
+    }
+    Ok(reachable_moves)
 }
 
 #[derive(Debug)]
@@ -112,12 +145,12 @@ pub enum MoveResult {
      * bool: was figure taken
      */
     Ongoing(Game, bool),
-    Stopped(StoppedReason),
+    Stopped(StoppedReason, GameState),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum StoppedReason {
-    KingInCheckAfterMove(GameState),
+    KingInCheckAfterMove,
     InsufficientMaterial,
     ThreeTimesRepetition,
     NoChangeIn50Moves,
@@ -135,13 +168,13 @@ mod tests {
     #[rstest(
     game_config_testing_white, next_move_str, expected_is_insufficient_material,
     case("white ♔e1 ♜f1 ♚e8", "e1-f1", true),
-    case("white ♔e1 ♘b1 ♘g1 ♚e8 ♞b8 ♞g8", "e1-f1", true),
-    case("white ♔e1 ♘b1 ♘g1 ♚e8 ♞b8 ♞g8 ♞h8", "e1-f1", false),
-    case("white ♔e1 ♚e8 ♞b8 ♞g8 ♞h8", "e1-f1", false),
-    case("white ♔e1 ♗b1 ♚e8 ♞b8 ♞g8", "e1-f1", true),
-    case("white ♔e1 ♗b1 ♚e8 ♝g8", "e1-f1", true),
-    case("white ♔e1 ♗b1 ♘g8 ♚e8", "e1-f1", false),
-    case("white ♔e1 ♗b1 ♗g8 ♚e8", "e1-f1", false),
+    case("white ♔e1 ♜f1 ♘b1 ♘g1 ♚e8 ♞b8 ♞g8", "e1-f1", true),
+    case("white ♔e1 ♜f1 ♘b1 ♘g1 ♚e8 ♞b8 ♞g8 ♞h8", "e1-f1", false),
+    case("white ♔e1 ♜f1 ♚e8 ♞b8 ♞g8 ♞h8", "e1-f1", false),
+    case("white ♔e1 ♜f1 ♗b1 ♚e8 ♞b8 ♞g8", "e1-f1", true),
+    case("white ♔e1 ♜f1 ♗b1 ♚e8 ♝g8", "e1-f1", true),
+    case("white ♔e1 ♜f1 ♗b1 ♘g8 ♚e8", "e1-f1", false),
+    case("white ♔e1 ♜f1 ♗b1 ♗g8 ♚e8", "e1-f1", false),
     case("white ♔e1 ♖b1 ♚e8", "e1-f1", false),
     case("white ♔e1 ♛b1 ♚e8", "e1-f1", false),
     case("white ♔e1 ♙b2 ♚e8", "e1-f1", false),
@@ -149,7 +182,6 @@ mod tests {
     case("white ♔a1 ♟a2 ♚a3", "a1-a2", false), // because king is in check after move
     ::trace //This leads to the arguments being printed in front of the test result.
     )]
-    #[test]
     fn test_game_ends_bc_insufficient_material(
         game_config_testing_white: &str,
         next_move_str: &str,
@@ -157,7 +189,7 @@ mod tests {
     ) {
         fn is_insufficient_material(move_result: MoveResult) -> bool {
             match move_result {
-                MoveResult::Stopped(StoppedReason::InsufficientMaterial) => true,
+                MoveResult::Stopped(StoppedReason::InsufficientMaterial, _) => true,
                 _ => false,
             }
         }

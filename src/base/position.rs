@@ -55,6 +55,10 @@ impl Position {
         }
     }
 
+    pub fn from_code(code: &str) -> Position {
+        code.parse::<Position>().expect(format!("illegal Position code: {}", code).as_str())
+    }
+
     pub fn get_row_distance(&self, other: Position) -> i8 {
         (self.row - other.row).abs()
     }

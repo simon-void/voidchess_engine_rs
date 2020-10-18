@@ -2,6 +2,9 @@ use std::cmp::Ordering;
 use crate::game::StoppedReason;
 use crate::base::Move;
 
+pub(crate) mod frontend;
+pub(crate) mod testing;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Evaluation {
     WinIn(u8),
@@ -74,35 +77,6 @@ impl PartialOrd for Evaluation {
                 }
             },
             _ => rank_order,
-        }
-    }
-}
-
-/**
- * for testing
- */
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum RoughEvaluation {
-    WinIn(u8),
-    PositiveNumeric, // original numeric evaluation was >= 0.0
-    NegativeNumeric, // original numeric evaluation was < 0.0
-    Draw(DrawReason),
-    LoseIn(u8),
-}
-
-impl RoughEvaluation {
-    pub(crate) fn from(eval: &Evaluation) -> RoughEvaluation {
-        match eval {
-            Evaluation::WinIn(depth) => RoughEvaluation::WinIn(*depth/2),
-            Evaluation::LoseIn(depth, _) => RoughEvaluation::LoseIn((*depth+1)/2),
-            Evaluation::Draw(reason) => RoughEvaluation::Draw(*reason),
-            Evaluation::Numeric(value) => {
-                if *value>0.0 {
-                    RoughEvaluation::PositiveNumeric
-                } else {
-                    RoughEvaluation::NegativeNumeric
-                }
-            }
         }
     }
 }
