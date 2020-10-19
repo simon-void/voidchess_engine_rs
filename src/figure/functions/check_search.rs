@@ -97,3 +97,40 @@ fn get_first_opposite_color_figure_type_in_direction(
         is_attacker_next_to_self = false;
     }
 }
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    use crate::game::{GameState};
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+    #[rstest(
+    color, game_state_config, king_pos_config, expected_is_check,
+    case(Color::Black, "black ♔b6 ♙a7 ♚a8", "a8", false),
+    case(Color::White, "white ♔h8 ♚f8 ♜e7 ♟e6 ♟d7", "h8", false),
+    case(Color::White, "white ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", "g3", false),
+    case(Color::Black, "black ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", "g1", true),
+    case(Color::Black, "black ♔g3 ♘e2 ♚g1 ♙c2 ♙d3", "g1", true),
+    case(Color::Black, "black ♔g3 ♗e3 ♚g1 ♙c2 ♙d3", "g1", true),
+    case(Color::Black, "black ♔a1 ♚e4 ♙d3", "e4", true),
+    case(Color::Black, "black ♔a1 ♚c4 ♙d3", "c4", true),
+    case(Color::Black, "black ♔a1 ♚e2 ♙d3", "e2", false),
+    case(Color::Black, "black ♔a1 ♚c2 ♙d3", "c2", false),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_is_king_in_check(
+        color: Color,
+        game_state_config: &str,
+        king_pos_config: &str,
+        expected_is_check: bool,
+    ) {
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        let king_pos = king_pos_config.parse::<Position>().unwrap();
+
+        let actual_in_check = is_king_in_check(king_pos, color, &game_state.board);
+        assert_eq!(actual_in_check, expected_is_check);
+    }
+}

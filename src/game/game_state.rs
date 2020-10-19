@@ -408,8 +408,8 @@ impl GameState {
 
     pub fn is_active_king_in_check(&self) -> bool {
         let king_pos = match self.turn_by {
-            Color::Black => self.white_king_pos,
-            Color::White => self.black_king_pos,
+            Color::White => self.white_king_pos,
+            Color::Black => self.black_king_pos,
         };
         is_king_in_check(king_pos, self.turn_by, &self.board)
     }
@@ -644,5 +644,42 @@ mod tests {
         assert_eq!(toggled_game_state.get_passive_king_pos(), "g2".parse::<Position>().unwrap(), "game_state {}", &toggled_game_state);
         assert_eq!(toggled_game_state.en_passant_intercept_pos.unwrap(), "h3".parse::<Position>().unwrap(), "game_state {}", &toggled_game_state);
         toggled_game_state.do_move(white_move.toggle_rows());
+    }
+
+    #[rstest(
+    game_state_config, expected_is_check,
+    case("black ♔b6 ♙a7 ♚a8", false),
+    case("white ♔h8 ♚f8 ♜e7 ♟e6 ♟d7", false),
+    case("white ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", false),
+    case("black ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", true),
+    case("black ♔g3 ♘e2 ♚g1 ♙c2 ♙d3", true),
+    case("black ♔g3 ♗e3 ♚g1 ♙c2 ♙d3", true),
+    case("black ♔a1 ♚e4 ♙d3", true),
+    case("black ♔a1 ♚c4 ♙d3", true),
+    case("black ♔a1 ♚e2 ♙d3", false),
+    case("black ♔a1 ♚c2 ♙d3", false),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_is_active_king_in_check(
+        game_state_config: &str,
+        expected_is_check: bool,
+    ) {
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        assert_eq!(game_state.is_active_king_in_check(), expected_is_check, "provided game_state");
+        assert_eq!(game_state.toggle_colors().is_active_king_in_check(), expected_is_check, "toggled game_state");
+    }
+
+    #[rstest(
+    game_state_config, expected_color,
+    case("black ♔b6 ♙a7 ♚a8", Color::Black),
+    case("white ♔h8 ♚f8 ♜e7 ♟e6 ♟d7", Color::White),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_turn_by(
+        game_state_config: &str,
+        expected_color: Color,
+    ) {
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        assert_eq!(game_state.turn_by, expected_color);
     }
 }
