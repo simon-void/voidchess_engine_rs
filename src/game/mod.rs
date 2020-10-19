@@ -32,7 +32,7 @@ impl Game {
     }
 
     pub fn play(&self, a_move: &Move) -> MoveResult {
-        let (new_game_state, has_caught_figure) = self.latest_state.do_move(*a_move);
+        let (new_game_state, move_stats) = self.latest_state.do_move(*a_move);
 
         let reachable_moves = match verify_game_state(&new_game_state) {
             Ok(moves) => {moves}
@@ -49,7 +49,7 @@ impl Game {
         //     return MoveResult::Stopped(StoppedReason::InsufficientMaterial);
         // }
         let new_game = Game::from_state_and_reachable_moves(new_game_state, reachable_moves);
-        let move_result = MoveResult::Ongoing(new_game, has_caught_figure);
+        let move_result = MoveResult::Ongoing(new_game, move_stats);
         move_result
     }
 
@@ -133,7 +133,7 @@ fn verify_game_state(game_state: &GameState) -> Result<Moves, StoppedReason> {
     if reachable_moves.iter().any(|reachable_move| reachable_move.to == passive_king_pos) {
         return Err(StoppedReason::KingInCheckAfterMove);
     }
-    if !game_state.contains_sufficient_material_to_continue() {
+    if !game_state.board.contains_sufficient_material_to_continue() {
         return Err(StoppedReason::InsufficientMaterial);
     }
     Ok(reachable_moves)
@@ -144,7 +144,7 @@ pub enum MoveResult {
     /*
      * bool: was figure taken
      */
-    Ongoing(Game, bool),
+    Ongoing(Game, MoveStats),
     Stopped(StoppedReason, GameState),
 }
 

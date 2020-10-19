@@ -3,6 +3,7 @@ use crate::base::{Color, Position};
 use crate::base::I8_RANGE_07;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
+use tinyvec::alloc::slice::Iter;
 
 static WHITE_PAWN: Figure = Figure {fig_type:FigureType::Pawn, color: Color::White,};
 static WHITE_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::White,};
@@ -205,6 +206,48 @@ impl Board {
             None => FieldContent::Empty,
         }
     }
+
+    pub fn encode(&self) -> EncodedBoard {
+        // encodes an optional figure into an u64 that is guaranteed to only use its 4 lowest bytes
+        fn encode_opt_figure(opt_figure: &Option<Figure>) -> u64 {
+            match opt_figure {
+                None => { 0 }
+                Some(figure) => {
+                    let type_value = match figure.fig_type {
+                        FigureType::Pawn => { 1 }
+                        FigureType::Rook => { 2 }
+                        FigureType::Knight => { 3 }
+                        FigureType::Bishop => { 4 }
+                        FigureType::Queen => { 5 }
+                        FigureType::King => { 6 }
+                    };
+                    if figure.color == Color::White {
+                        8 + type_value
+                    } else {
+                        type_value
+                    }
+                }
+            }
+        }
+        fn encode_figure_slice(slice_of_16_figures: &[Option<Figure>]) -> u64 {
+            let mut opt_fig_iter: Iter<Option<Figure>> = slice_of_16_figures.iter();
+            let mut slice_compacted = opt_fig_iter.next().map(|it| encode_opt_figure(it)).unwrap_or(0);
+            for next_opt_fig in opt_fig_iter {
+                slice_compacted = slice_compacted << 4;
+                slice_compacted += encode_opt_figure(next_opt_fig);
+            }
+            slice_compacted
+        }
+
+        EncodedBoard {
+            compacted: [
+                encode_figure_slice(&self.state[..16]),
+                encode_figure_slice(&self.state[16..32]),
+                encode_figure_slice(&self.state[32..16]),
+                encode_figure_slice(&self.state[48..]),
+            ]
+        }
+    }
 }
 
 impl Display for Board {
@@ -230,4 +273,9 @@ pub const USIZE_RANGE_063: Range<usize> = 0..64;
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FieldContent {
     Empty, OwnFigure, OpponentFigure,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct EncodedBoard {
+    compacted: [u64; 4],
 }

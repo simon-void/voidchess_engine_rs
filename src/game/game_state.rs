@@ -239,10 +239,7 @@ impl GameState {
         move_collector
     }
 
-    /**
-    * returns the game_state after the move got applied and if a figure got caught while doing so.
-    */
-    pub fn do_move(&self, next_move: Move) -> (GameState, bool) {
+    pub fn do_move(&self, next_move: Move) -> (GameState, MoveStats) {
         debug_assert!(
             next_move.to != self.white_king_pos && next_move.to != self.black_king_pos,
             "move {} would capture a king on game {}", next_move, self.board
@@ -283,7 +280,7 @@ impl GameState {
             new_white_king_pos,
             new_black_king_pos,
             new_en_passant_intercept_pos,
-            figure_gets_caught,
+            move_stats,
         ) = match moving_figure.fig_type {
             FigureType::King => {
                 let is_castling = if let Some(figure_to_be_caught) = self.board.get_figure(next_move.to) {
@@ -300,6 +297,11 @@ impl GameState {
                     do_normal_move(&mut new_board, next_move)
                 };
 
+                let king_move_stats = MoveStats {
+                    did_catch_figure: figure_gets_caught,
+                    did_move_pawn: false,
+                };
+
                 match moving_figure.color {
                     Color::White => {
                         new_is_white_queen_side_castling_possible.deactivate();
@@ -308,7 +310,7 @@ impl GameState {
                             new_king_pos,
                             self.black_king_pos,
                             None,
-                            figure_gets_caught,
+                            king_move_stats,
                         )
                     }
                     Color::Black => {
@@ -318,7 +320,7 @@ impl GameState {
                             self.white_king_pos,
                             new_king_pos,
                             None,
-                            figure_gets_caught,
+                            king_move_stats,
                         )
                     }
                 }
@@ -342,7 +344,10 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
-                            figure_gets_caught,
+                            MoveStats {
+                                did_catch_figure: figure_gets_caught,
+                                did_move_pawn: true,
+                            },
                         )
                     },
                     PawnMoveType::DoubleStep => {
@@ -353,7 +358,10 @@ impl GameState {
                                 next_move.to.column,
                                 (next_move.from.row + next_move.to.row) / 2,
                             )),
-                            false,
+                            MoveStats {
+                                did_catch_figure: false,
+                                did_move_pawn: true,
+                            },
                         )
                     },
                     PawnMoveType::EnPassantIntercept => {
@@ -361,7 +369,10 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
-                            true,
+                            MoveStats {
+                                did_catch_figure: true,
+                                did_move_pawn: true,
+                            },
                         )
                     },
                 }
@@ -372,7 +383,10 @@ impl GameState {
                     self.white_king_pos,
                     self.black_king_pos,
                     None,
-                    figure_gets_caught,
+                    MoveStats {
+                        did_catch_figure: figure_gets_caught,
+                        did_move_pawn: false,
+                    },
                 )
             },
         };
@@ -388,7 +402,7 @@ impl GameState {
             is_black_queen_side_castling_still_possible: new_is_black_queen_side_castling_possible,
             is_black_king_side_castling_still_possible: new_is_black_king_side_castling_possible,
         },
-         figure_gets_caught,
+         move_stats,
         )
     }
 
@@ -412,10 +426,6 @@ impl GameState {
             Color::Black => self.black_king_pos,
         };
         is_king_in_check(king_pos, self.turn_by, &self.board)
-    }
-
-    pub fn contains_sufficient_material_to_continue(&self) -> bool {
-        self.board.contains_sufficient_material_to_continue()
     }
 }
 
@@ -553,6 +563,12 @@ impl fmt::Display for GameState {
         write!(f, "{}'s turn", self.turn_by);
         writeln!(f, "{}", self.board)
     }
+}
+
+#[derive(Debug)]
+pub struct MoveStats {
+    did_catch_figure: bool,
+    did_move_pawn: bool,
 }
 
 pub static WHITE_KING_STARTING_POS: Position = Position::new_unchecked(4, 0);
