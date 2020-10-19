@@ -3,8 +3,9 @@ use std::str;
 use crate::base::position::Position;
 use tinyvec::TinyVec;
 use crate::base::{ChessError, ErrorKind};
+use tinyvec::alloc::fmt::Formatter;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Move {
     pub from: Position,
     pub to: Position,
@@ -48,6 +49,12 @@ impl str::FromStr for Move {
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}{}", self.from, self.pawn_promo, self.to)
+    }
+}
+
+impl fmt::Debug for Move {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

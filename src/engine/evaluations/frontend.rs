@@ -1,7 +1,8 @@
 use super::*;
 use crate::engine::evaluations::frontend::MoveEvaluation::*;
+use crate::engine::evaluations::frontend::GameEvaluation::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum GameEvaluation {
     GameEnded(GameEndResult),
     MoveToPlay(Move, MoveEvaluation),
@@ -29,33 +30,26 @@ pub enum MoveEvaluation {
     EngineGetsCheckMatedIn(u8),
 }
 
-impl PartialEq for MoveEvaluation {
+impl PartialEq for GameEvaluation {
     fn eq(&self, other: &Self) -> bool {
         match self {
-            EngineCheckMatesIn(nr_of_fullmoves) => {
-                if let EngineGetsCheckMatedIn(other_nr_of_fullmoves) = other {
-                    nr_of_fullmoves == other_nr_of_fullmoves
+            GameEnded(game_end_result) => {
+                if let GameEnded(other_game_end_result) = other {
+                    game_end_result == other_game_end_result
                 } else {
                     false
                 }
             }
-            Numeric(value) => {
-                if let Numeric(other_value) = other {
-                    value.partial_cmp(other_value).unwrap() == Ordering::Equal
+            MoveToPlay(self_move, move_eval) => {
+                if let MoveToPlay(other_move, other_move_eval) = other {
+                    self_move == other_move && move_eval == other_move_eval
                 } else {
                     false
                 }
             }
-            Draw(reason) => {
-                if let Draw(other_reason) = other {
-                    reason == other_reason
-                } else {
-                    false
-                }
-            }
-            EngineGetsCheckMatedIn(nr_of_fullmoves) => {
-                if let EngineGetsCheckMatedIn(other_nr_of_fullmoves) = other {
-                    nr_of_fullmoves == other_nr_of_fullmoves
+            Err(msg) => {
+                if let Err(other_msg) = other {
+                    msg == other_msg
                 } else {
                     false
                 }
@@ -64,12 +58,23 @@ impl PartialEq for MoveEvaluation {
     }
 }
 
+impl Eq for GameEvaluation {}
+
+impl PartialEq for MoveEvaluation {
+    fn eq(&self, other: &Self) -> bool {
+        // this is clearly a hack, but the non-hacky version failed for some reason
+        let debug_self = format!("{:?}", self);
+        let debug_other = format!("{:?}", other);
+        debug_self == debug_other
+    }
+}
+
 impl Eq for MoveEvaluation {}
 
 impl MoveEvaluation {
     pub(crate) fn from(eval: &Evaluation) -> MoveEvaluation {
         match eval {
-            Evaluation::WinIn(number_of_halfmoves) => { EngineCheckMatesIn(number_of_halfmoves/2)}
+            Evaluation::WinIn(number_of_halfmoves) => { EngineCheckMatesIn((number_of_halfmoves-1)/2)}
             Evaluation::LoseIn(number_of_halfmoves, _) => {
                 let full_moves = number_of_halfmoves/2;
                 if full_moves == 0 {
