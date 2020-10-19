@@ -277,7 +277,7 @@ impl Iterator for KnightPosIterator<'_> {
                 7 =>  self.knight_pos.jump(-1, 2),
                 _ => panic!("index should lie between [0,7] but is {}", self.index)
             };
-            self.index = self.index + 1;
+            self.index += 1;
             let opt_pos = opt_pos.map(|pos|{
                 let field_content = self.board.get_content_type(pos, self.knight_color);
                 match field_content {

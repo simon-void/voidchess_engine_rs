@@ -75,7 +75,7 @@ impl Board {
                     figures[next_index] = Some(
                         (figure, Position::from_index_unchecked(state_index))
                     );
-                    next_index = next_index + 1;
+                    next_index += 1;
                 }
             }
         }
@@ -94,12 +94,12 @@ impl Board {
                     white_figures[next_white_index] = Some(
                         (figure.fig_type, Position::from_index_unchecked(state_index))
                     );
-                    next_white_index = next_white_index + 1;
+                    next_white_index += 1;
                 } else {
                     black_figures[next_black_index] = Some(
                         (figure.fig_type, Position::from_index_unchecked(state_index))
                     );
-                    next_black_index = next_black_index + 1;
+                    next_black_index += 1;
                 }
             }
         }
@@ -124,7 +124,7 @@ impl Board {
         if old_content.is_some() {
             true
         } else {
-            self.number_of_figures = self.number_of_figures + 1;
+            self.number_of_figures += 1;
             false
         }
     }
@@ -150,8 +150,8 @@ impl Board {
                     FigureType::Pawn | FigureType::Rook | FigureType::Queen => {return true;}
                     FigureType::Knight => {
                         match figure.color {
-                            Color::Black => { black_knight_nr = black_knight_nr + 1; }
-                            Color::White => { white_knight_nr = white_knight_nr + 1; }
+                            Color::Black => { black_knight_nr += 1; }
+                            Color::White => { white_knight_nr += 1; }
                         }
                     }
                     FigureType::Bishop => {

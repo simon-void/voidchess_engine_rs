@@ -13,10 +13,6 @@ pub fn evaluate_move(
     evaluate_for: Color,
     eval_type: StaticEvalType,
 ) -> Evaluation {
-    if old_game.is_passive_king_pos(&a_move.to) {
-        return Evaluation::WinIn(0);
-    }
-
     let new_half_step: usize = 1;
     let move_result = old_game.play(a_move);
     return match move_result {
@@ -29,12 +25,7 @@ pub fn evaluate_move(
             let max_eval = moves.iter().map(|next_move|
                 get_min(&game, next_move, new_half_step, half_step_depth, evaluate_for, eval_type)
             ).max_by(sort_evaluations_best_first).unwrap();
-
-            if is_max_eval_actually_stalemate(&max_eval, new_half_step, &game) {
-                Evaluation::Draw(DrawReason::StaleMate)
-            } else {
-                max_eval
-            }
+            max_eval
         }
     };
 }
@@ -114,8 +105,8 @@ fn get_max_stopped_eval(
 }
 
 fn is_max_eval_actually_stalemate(max_eval: &Evaluation, half_step: usize, game: &Game) -> bool {
-    if let Evaluation::WinIn(win_in_half_step) = max_eval {
-        if *win_in_half_step as usize == (half_step + 1) && ! game.is_active_king_in_check() {
+    if let Evaluation::LoseIn(lose_in_half_step, _) = max_eval {
+        if *lose_in_half_step as usize == (half_step + 1) && ! game.is_active_king_in_check() {
             return true;
         }
     }

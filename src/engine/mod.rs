@@ -28,13 +28,21 @@ pub fn evaluate(game_config: &str, move_depth: usize) -> GameEvaluation {
         Ok(game) => {game}
     };
 
-    let evaluated_moves = evaluate_game(game, move_depth);
-    let next_move = evaluated_moves.first().unwrap();
+    let evaluated_moves: Vec<EvaluatedMove> = evaluate_game(&game, move_depth);
+    let best_move: &EvaluatedMove = evaluated_moves.first().unwrap();
 
-    GameEvaluation::MoveToPlay(next_move.a_move, MoveEvaluation::from(&next_move.evaluation))
+    if let Evaluation::LoseIn(1, _) = best_move.evaluation {
+        return if game.is_active_king_in_check() {
+            GameEvaluation::GameEnded(GameEndResult::EngineLost)
+        } else {
+            GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::StaleMate))
+        }
+    }
+
+    GameEvaluation::MoveToPlay(best_move.a_move, MoveEvaluation::from(&best_move.evaluation))
 }
 
-fn evaluate_game(game: Game, move_depth: usize) -> Vec<EvaluatedMove> {
+fn evaluate_game(game: &Game, move_depth: usize) -> Vec<EvaluatedMove> {
     // let mut results: Vec<EvaluatedMove> = vec![];
     // for next_move in game.get_reachable_moves().iter() {
     //     let eval = evaluate_move(&game, next_move, 3, game.get_game_state().turn_by, StaticEvalType::default);
