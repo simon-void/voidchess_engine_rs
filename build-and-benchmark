@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "starting to compile a release build ..."
+cargo build --release
+
+echo ""
+echo "starting to benchmark ..."
+{ time ./target/release/voidchess_engine_rs >/dev/null; } 2>&1 | grep real

@@ -4,8 +4,9 @@ use std::ops::Range;
 use std::str;
 use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
+use tinyvec::alloc::fmt::Formatter;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Position {
     pub column: i8,
     pub row: i8,
@@ -174,6 +175,12 @@ impl Eq for Position {
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", (self.column + 97) as u8 as char, (self.row+49) as u8 as char)
+    }
+}
+
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
