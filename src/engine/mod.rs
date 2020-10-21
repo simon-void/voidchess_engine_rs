@@ -84,7 +84,7 @@ mod tests {
     case("black ♔b6 ♙a7 ♚a8", 0, GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::StaleMate))),
     case("white ♔h8 ♚f8 ♜e7 ♟e6 ♟d7", 0, GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::StaleMate))),
     case("white ♔h8 ♚f8 ♞a7", 0, GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::InsufficientMaterial))),
-    case("b1-c3 b8-c6 c3-b1 c6-b8 b1-c3 b8-c6 c3-b1 c6-b8", 0, GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::ThreeTimesRepetition))),
+    case("b1-c3 b8-c6 c3-b1 c6-b8 b1-c3 b8-c6 c3-b1 c6-b8 b1-c3", 0, GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::ThreeTimesRepetition))),
     case("white ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", 0, GameEvaluation::GameEnded(GameEndResult::EngineWon)),
     case("black ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", 0, GameEvaluation::GameEnded(GameEndResult::EngineLost)),
     case("white ♔g3 ♖d2 ♚g1 ♙c2 ♙d3", 0, GameEvaluation::MoveToPlay(Move::from_code("d2-d1"), MoveEvaluation::EngineCheckMatesIn(0))),

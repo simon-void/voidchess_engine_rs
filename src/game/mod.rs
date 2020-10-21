@@ -3,14 +3,16 @@ mod board;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::base::{Moves, ChessError, ErrorKind, Move, Position, MoveArray};
+use crate::base::{Moves, ChessError, ErrorKind, Move, Position, MoveArray, Color};
 use std::{str, fmt};
-use tinyvec::TinyVec;
+use tinyvec::*;
 
 #[derive(Clone, Debug)]
 pub struct Game {
     latest_state: GameState,
     reachable_moves: Moves,
+    white_board_states_history: BoardStates,
+    black_board_states_history: BoardStates,
 }
 
 impl Game {
@@ -25,9 +27,18 @@ impl Game {
     }
 
     fn from_state_and_reachable_moves(game_state: GameState, reachable_moves: Moves) -> Game {
+        let mut past_white_board_states: BoardStates = tiny_vec!();
+        let mut past_black_board_states: BoardStates = tiny_vec!();
+        let current_board_state = game_state.board.encode();
+        match game_state.turn_by {
+            Color::White => {past_white_board_states.push(current_board_state)}
+            Color::Black => {past_black_board_states.push(current_board_state)}
+        }
         Game {
             latest_state: game_state,
             reachable_moves,
+            white_board_states_history: past_white_board_states,
+            black_board_states_history: past_black_board_states,
         }
     }
 
@@ -35,20 +46,114 @@ impl Game {
         let (new_game_state, move_stats) = self.latest_state.do_move(*a_move);
 
         let reachable_moves = match verify_game_state(&new_game_state) {
-            Ok(moves) => {moves}
+            Ok(moves) => { moves }
             Err(stoppedReason) => {
                 return MoveResult::Stopped(stoppedReason, new_game_state);
             }
         };
-        // let passive_king_pos = new_game_state.get_passive_king_pos();
-        // let reachable_moves = new_game_state.get_reachable_moves();
-        // if reachable_moves.iter().any(|reachable_move| reachable_move.to == passive_king_pos) {
-        //     return MoveResult::Stopped(StoppedReason::KingInCheckAfterMove(&new_game_state));
-        // }
-        // if !new_game_state.contains_sufficient_material_to_continue() {
-        //     return MoveResult::Stopped(StoppedReason::InsufficientMaterial);
-        // }
-        let new_game = Game::from_state_and_reachable_moves(new_game_state, reachable_moves);
+        // since past_game_states are always empty on Game construction
+        // we don't need a three-times repetition check in verify_game_state
+        let (
+            new_white_board_states_history,
+            new_black_board_states_history,
+        ) = {
+            let new_board_state = new_game_state.board.encode();
+
+            if move_stats.did_move_pawn || move_stats.did_catch_figure {
+                let mut new_white_board_states = tiny_vec!();
+                let mut new_black_board_states = tiny_vec!();
+                match new_game_state.turn_by {
+                    Color::White => { new_white_board_states.push(new_board_state); }
+                    Color::Black => { new_black_board_states.push(new_board_state); }
+                };
+                (new_white_board_states, new_black_board_states)
+            } else {
+                let mut new_white_board_states = self.white_board_states_history.clone();
+                let mut new_black_board_states = self.black_board_states_history.clone();
+
+                fn push_onto_list_and_checks_if_three_fold_repetition(
+                    board_state: BoardState,
+                    board_states: &mut BoardStates,
+                ) -> bool {
+
+                    let is_three_fold_repetition: bool = if board_states.len() < 4 {
+                        false
+                    } else {
+                        let mut occurrence_of_board_state: usize = 1;
+                        board_states.iter().for_each(|it| {
+                            if board_state.eq(it) {
+                                occurrence_of_board_state += 1;
+                            }
+                        });
+                        debug_assert!(
+                            occurrence_of_board_state<4,
+                            "maximum occurrence of a board state should be 3 but is {}",
+                            occurrence_of_board_state
+                        );
+                        occurrence_of_board_state == 3
+                    };
+                    board_states.push(board_state);
+                    is_three_fold_repetition
+                }
+
+                let is_three_fold_repetition = match new_game_state.turn_by {
+                    Color::White => {
+                        push_onto_list_and_checks_if_three_fold_repetition(
+                            new_board_state,
+                            &mut new_white_board_states,
+                        )
+                    }
+                    Color::Black => {
+                        push_onto_list_and_checks_if_three_fold_repetition(
+                            new_board_state,
+                            &mut new_black_board_states,
+                        )
+                    }
+                };
+                if is_three_fold_repetition {
+                    return MoveResult::Stopped(StoppedReason::ThreeTimesRepetition, new_game_state);
+                }
+                (new_white_board_states, new_black_board_states)
+            }
+        };
+
+        debug_assert!(
+            {
+                let white_states_count = new_white_board_states_history.len() as isize;
+                let black_states_count = new_black_board_states_history.len() as isize;
+                (white_states_count-black_states_count).abs() <2
+            },
+            "number of white({})/black({}) board_states can only differ by 1",
+            new_white_board_states_history.len(),
+            new_black_board_states_history.len(),
+        );
+        debug_assert!(
+            {
+                if move_stats.did_catch_figure || move_stats.did_move_pawn {
+                    let white_states_count = new_white_board_states_history.len() as isize;
+                    let black_states_count = new_black_board_states_history.len() as isize;
+                    match new_game_state.turn_by {
+                        Color::White => {
+                            white_states_count == 1 && black_states_count == 0
+                        }
+                        Color::Black => {
+                            white_states_count == 0 && black_states_count == 1
+                        }
+                    }
+                } else {true}
+            },
+            "catching a figure or moving a pawn resets the board states: color {}, white# {}, black# {}",
+            new_game_state.turn_by,
+            new_white_board_states_history.len(),
+            new_black_board_states_history.len(),
+        );
+
+        let new_game = Game {
+            latest_state: new_game_state,
+            reachable_moves,
+            white_board_states_history: new_white_board_states_history,
+            black_board_states_history: new_black_board_states_history,
+        };
         let move_result = MoveResult::Ongoing(new_game, move_stats);
         move_result
     }
@@ -148,7 +253,7 @@ pub enum MoveResult {
     Stopped(StoppedReason, GameState),
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum StoppedReason {
     KingInCheckAfterMove,
     InsufficientMaterial,
@@ -198,5 +303,37 @@ mod tests {
         let next_move = next_move_str.parse::<Move>().unwrap();
         let move_result = game.play(&next_move);
         assert_eq!(is_insufficient_material(move_result), expected_is_insufficient_material);
+    }
+
+    #[rstest(
+    game_config, expected_stop_reason,
+    case("white ♔h8 ♚f8 ♞a7", StoppedReason::InsufficientMaterial),
+    case("black ♔h8 ♚f8 ♛g7", StoppedReason::KingInCheckAfterMove),
+    case("b1-c3 b8-c6 c3-b1 c6-b8 b1-c3 b8-c6 c3-b1 c6-b8 b1-c3", StoppedReason::ThreeTimesRepetition),
+    case("b1-c3 b8-c6 c3-b1 c6-b8 b1-c3 b8-c6 c3-b1 c6-b8", StoppedReason::ThreeTimesRepetition),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_parse_stopped_game(
+        game_config: &str,
+        expected_stop_reason: StoppedReason,
+    ) {
+        // pub enum StoppedReason {
+        //     KingInCheckAfterMove,
+        //     InsufficientMaterial,
+        //     ThreeTimesRepetition,
+        //     NoChangeIn50Moves,
+        // }
+        let game = match game_config.parse::<Game>() {
+            Err(err) => {
+                if let ErrorKind::HighLevelErr(actual_stopped_reason) = err.kind {
+                    assert_eq!(actual_stopped_reason, expected_stop_reason);
+                } else {
+                    panic!("expected HighLevelErr but got {}", err);
+                }
+            }
+            Ok(_) => {
+                panic!("expected HighLevelErr but got game");
+            }
+        };
     }
 }

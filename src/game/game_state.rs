@@ -567,8 +567,8 @@ impl fmt::Display for GameState {
 
 #[derive(Debug)]
 pub struct MoveStats {
-    did_catch_figure: bool,
-    did_move_pawn: bool,
+    pub did_catch_figure: bool,
+    pub did_move_pawn: bool,
 }
 
 pub static WHITE_KING_STARTING_POS: Position = Position::new_unchecked(4, 0);
@@ -635,13 +635,13 @@ mod tests {
     ) {
         let game_state = game_config_testing.parse::<GameState>().unwrap();
         let white_move = next_move_str.parse::<Move>().unwrap();
-        let ( _, actual_white_has_caught_figure) = game_state.do_move(white_move);
-        assert_eq!(actual_white_has_caught_figure, expected_catches_figure, "white catches figure");
+        let ( _, move_stats) = game_state.do_move(white_move);
+        assert_eq!(move_stats.did_catch_figure, expected_catches_figure, "white catches figure");
 
 
         let toggled_game_state = game_state.toggle_colors();
-        let ( _, actual_black_has_caught_figure) = toggled_game_state.do_move(white_move.toggle_rows());
-        assert_eq!(actual_black_has_caught_figure, expected_catches_figure, "black catches figure");
+        let ( _, move_stats) = toggled_game_state.do_move(white_move.toggle_rows());
+        assert_eq!(move_stats.did_catch_figure, expected_catches_figure, "black catches figure");
     }
 
     #[test]

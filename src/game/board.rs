@@ -4,6 +4,7 @@ use crate::base::I8_RANGE_07;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
 use tinyvec::alloc::slice::Iter;
+use tinyvec::TinyVec;
 
 static WHITE_PAWN: Figure = Figure {fig_type:FigureType::Pawn, color: Color::White,};
 static WHITE_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::White,};
@@ -207,7 +208,7 @@ impl Board {
         }
     }
 
-    pub fn encode(&self) -> EncodedBoard {
+    pub fn encode(&self) -> BoardState {
         // encodes an optional figure into an u64 that is guaranteed to only use its 4 lowest bytes
         fn encode_opt_figure(opt_figure: &Option<Figure>) -> u64 {
             match opt_figure {
@@ -239,11 +240,11 @@ impl Board {
             slice_compacted
         }
 
-        EncodedBoard {
+        BoardState {
             compacted: [
                 encode_figure_slice(&self.state[..16]),
                 encode_figure_slice(&self.state[16..32]),
-                encode_figure_slice(&self.state[32..16]),
+                encode_figure_slice(&self.state[32..48]),
                 encode_figure_slice(&self.state[48..]),
             ]
         }
@@ -275,7 +276,44 @@ pub enum FieldContent {
     Empty, OwnFigure, OpponentFigure,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct EncodedBoard {
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub struct BoardState {
     compacted: [u64; 4],
 }
+
+// Default is needed, so that BoardState can be stored in a TinyVec
+impl Default for BoardState {
+    fn default() -> Self {
+        BoardState {
+            compacted: [0;4],
+        }
+    }
+}
+
+const INMEMORY_NR_OF_BOARD_STATES: usize = 20;
+
+#[derive(Clone)]
+pub struct BoardStateArray {
+    array: [BoardState; INMEMORY_NR_OF_BOARD_STATES]
+}
+
+impl tinyvec::Array for BoardStateArray {
+    type Item = BoardState;
+    const CAPACITY: usize = INMEMORY_NR_OF_BOARD_STATES;
+
+    fn as_slice(&self) -> &[Self::Item] {
+        &self.array
+    }
+
+    fn as_slice_mut(&mut self) -> &mut [Self::Item] {
+        &mut self.array
+    }
+
+    fn default() -> Self {
+        BoardStateArray {
+            array: [BoardState::default(); INMEMORY_NR_OF_BOARD_STATES]
+        }
+    }
+}
+
+pub type BoardStates = TinyVec<BoardStateArray>;
