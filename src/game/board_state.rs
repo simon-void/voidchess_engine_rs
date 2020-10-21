@@ -164,9 +164,13 @@ impl BoardStates {
             new_black_board_states_history.len(),
         );
 
-        Ok(BoardStates {
-            white_board_states_history: new_white_board_states_history,
-            black_board_states_history: new_black_board_states_history,
-        })
+        if new_white_board_states_history.len() == 50 && new_black_board_states_history.len() == 50 {
+            Err(StoppedReason::NoChangeIn50Moves)
+        } else {
+            Ok(BoardStates {
+                white_board_states_history: new_white_board_states_history,
+                black_board_states_history: new_black_board_states_history,
+            })
+        }
     }
 }
