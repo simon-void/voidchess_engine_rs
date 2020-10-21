@@ -560,7 +560,7 @@ enum PawnMoveType {
 
 impl fmt::Display for GameState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}'s turn", self.turn_by);
+        write!(f, "{}'s turn", self.turn_by)?;
         writeln!(f, "{}", self.board)
     }
 }

@@ -2,10 +2,8 @@ use crate::game::*;
 use crate::engine::evaluations::*;
 use crate::engine::min_max::{evaluate_move};
 use crate::engine::static_eval::StaticEvalType;
-use crate::base::{Move, ChessError, ErrorKind};
-use crate::engine::evaluations::*;
+use crate::base::{ErrorKind};
 use crate::engine::evaluations::frontend::*;
-use crate::base::ErrorKind::HighLevelErr;
 
 pub(crate) mod evaluations;
 mod min_max;
@@ -14,8 +12,8 @@ mod static_eval;
 pub fn evaluate(game_config: &str, move_depth: usize) -> GameEvaluation {
     let game = match game_config.parse::<Game>() {
         Err(err) => {
-            return if let ErrorKind::HighLevelErr(stoppedReason) = err.kind {
-                match stoppedReason {
+            return if let ErrorKind::HighLevelErr(stopped_reason) = err.kind {
+                match stopped_reason {
                     StoppedReason::KingInCheckAfterMove => {GameEvaluation::GameEnded(GameEndResult::EngineWon)}
                     StoppedReason::InsufficientMaterial => {GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::InsufficientMaterial))}
                     StoppedReason::ThreeTimesRepetition => {GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::ThreeTimesRepetition))}
@@ -76,6 +74,7 @@ mod tests {
     use crate::Game;
     use crate::engine::evaluations::*;
     use crate::engine::evaluations::frontend::*;
+    use crate::base::Move;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 

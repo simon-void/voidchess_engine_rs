@@ -4,7 +4,7 @@ use crate::base::I8_RANGE_07;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
 use tinyvec::alloc::slice::Iter;
-use tinyvec::TinyVec;
+use crate::game::board_state::BoardState;
 
 static WHITE_PAWN: Figure = Figure {fig_type:FigureType::Pawn, color: Color::White,};
 static WHITE_QUEEN_SIDE_ROOK: Figure = Figure {fig_type:FigureType::Rook, color: Color::White,};
@@ -240,30 +240,28 @@ impl Board {
             slice_compacted
         }
 
-        BoardState {
-            compacted: [
-                encode_figure_slice(&self.state[..16]),
-                encode_figure_slice(&self.state[16..32]),
-                encode_figure_slice(&self.state[32..48]),
-                encode_figure_slice(&self.state[48..]),
-            ]
-        }
+        BoardState::new([
+            encode_figure_slice(&self.state[0..16]),
+            encode_figure_slice(&self.state[16..32]),
+            encode_figure_slice(&self.state[32..48]),
+            encode_figure_slice(&self.state[48..64]),
+        ])
     }
 }
 
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        writeln!(f);
+        writeln!(f)?;
         for row_index in I8_RANGE_07.rev() {
             for column_index in I8_RANGE_07 {
                 let figure_index = Position::new_unchecked(column_index, row_index).index;
                 let fig_option = self.state[figure_index];
                 match fig_option {
-                    None => write!(f, "_"),
-                    Some(figure) => write!(f, "{}", figure),
+                    None => {write!(f, "_")},
+                    Some(figure) => {write!(f, "{}", figure)},
                 }?;
             }
-            writeln!(f, " {}", row_index + 1);
+            writeln!(f, " {}", row_index + 1)?;
         }
         writeln!(f, "abcdefgh")
     }
@@ -275,45 +273,3 @@ pub const USIZE_RANGE_063: Range<usize> = 0..64;
 pub enum FieldContent {
     Empty, OwnFigure, OpponentFigure,
 }
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct BoardState {
-    compacted: [u64; 4],
-}
-
-// Default is needed, so that BoardState can be stored in a TinyVec
-impl Default for BoardState {
-    fn default() -> Self {
-        BoardState {
-            compacted: [0;4],
-        }
-    }
-}
-
-const INMEMORY_NR_OF_BOARD_STATES: usize = 20;
-
-#[derive(Clone)]
-pub struct BoardStateArray {
-    array: [BoardState; INMEMORY_NR_OF_BOARD_STATES]
-}
-
-impl tinyvec::Array for BoardStateArray {
-    type Item = BoardState;
-    const CAPACITY: usize = INMEMORY_NR_OF_BOARD_STATES;
-
-    fn as_slice(&self) -> &[Self::Item] {
-        &self.array
-    }
-
-    fn as_slice_mut(&mut self) -> &mut [Self::Item] {
-        &mut self.array
-    }
-
-    fn default() -> Self {
-        BoardStateArray {
-            array: [BoardState::default(); INMEMORY_NR_OF_BOARD_STATES]
-        }
-    }
-}
-
-pub type BoardStates = TinyVec<BoardStateArray>;

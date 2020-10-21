@@ -1,18 +1,18 @@
 mod game_state;
 mod board;
+mod board_state;
 
 pub use crate::game::game_state::*;
 pub use crate::game::board::*;
-use crate::base::{Moves, ChessError, ErrorKind, Move, Position, MoveArray, Color};
+use crate::base::{Moves, ChessError, ErrorKind, Move, Position};
 use std::{str, fmt};
-use tinyvec::*;
+use crate::game::board_state::{BoardStates};
 
 #[derive(Clone, Debug)]
 pub struct Game {
     latest_state: GameState,
     reachable_moves: Moves,
-    white_board_states_history: BoardStates,
-    black_board_states_history: BoardStates,
+    board_states: BoardStates,
 }
 
 impl Game {
@@ -27,18 +27,12 @@ impl Game {
     }
 
     fn from_state_and_reachable_moves(game_state: GameState, reachable_moves: Moves) -> Game {
-        let mut past_white_board_states: BoardStates = tiny_vec!();
-        let mut past_black_board_states: BoardStates = tiny_vec!();
-        let current_board_state = game_state.board.encode();
-        match game_state.turn_by {
-            Color::White => {past_white_board_states.push(current_board_state)}
-            Color::Black => {past_black_board_states.push(current_board_state)}
-        }
+        let board_state = game_state.board.encode();
+        let turn_by = game_state.turn_by;
         Game {
             latest_state: game_state,
             reachable_moves,
-            white_board_states_history: past_white_board_states,
-            black_board_states_history: past_black_board_states,
+            board_states: BoardStates::new(board_state, turn_by),
         }
     }
 
@@ -47,112 +41,33 @@ impl Game {
 
         let reachable_moves = match verify_game_state(&new_game_state) {
             Ok(moves) => { moves }
-            Err(stoppedReason) => {
-                return MoveResult::Stopped(stoppedReason, new_game_state);
+            Err(stopped_reason) => {
+                return MoveResult::Stopped(stopped_reason, new_game_state);
             }
         };
-        // since past_game_states are always empty on Game construction
-        // we don't need a three-times repetition check in verify_game_state
-        let (
-            new_white_board_states_history,
-            new_black_board_states_history,
-        ) = {
+
+        let new_board_states: BoardStates = {
             let new_board_state = new_game_state.board.encode();
+            let new_turn_by = new_game_state.turn_by;
+            let new_board_state_or_stopped_reason =
+                self.board_states.add_board_state_and_check_for_draw(
+                    new_board_state,
+                    new_turn_by,
+                    &move_stats,
+                );
 
-            if move_stats.did_move_pawn || move_stats.did_catch_figure {
-                let mut new_white_board_states = tiny_vec!();
-                let mut new_black_board_states = tiny_vec!();
-                match new_game_state.turn_by {
-                    Color::White => { new_white_board_states.push(new_board_state); }
-                    Color::Black => { new_black_board_states.push(new_board_state); }
-                };
-                (new_white_board_states, new_black_board_states)
-            } else {
-                let mut new_white_board_states = self.white_board_states_history.clone();
-                let mut new_black_board_states = self.black_board_states_history.clone();
-
-                fn push_onto_list_and_checks_if_three_fold_repetition(
-                    board_state: BoardState,
-                    board_states: &mut BoardStates,
-                ) -> bool {
-
-                    let is_three_fold_repetition: bool = if board_states.len() < 4 {
-                        false
-                    } else {
-                        let mut occurrence_of_board_state: usize = 1;
-                        board_states.iter().for_each(|it| {
-                            if board_state.eq(it) {
-                                occurrence_of_board_state += 1;
-                            }
-                        });
-                        debug_assert!(
-                            occurrence_of_board_state<4,
-                            "maximum occurrence of a board state should be 3 but is {}",
-                            occurrence_of_board_state
-                        );
-                        occurrence_of_board_state == 3
-                    };
-                    board_states.push(board_state);
-                    is_three_fold_repetition
-                }
-
-                let is_three_fold_repetition = match new_game_state.turn_by {
-                    Color::White => {
-                        push_onto_list_and_checks_if_three_fold_repetition(
-                            new_board_state,
-                            &mut new_white_board_states,
-                        )
-                    }
-                    Color::Black => {
-                        push_onto_list_and_checks_if_three_fold_repetition(
-                            new_board_state,
-                            &mut new_black_board_states,
-                        )
-                    }
-                };
-                if is_three_fold_repetition {
-                    return MoveResult::Stopped(StoppedReason::ThreeTimesRepetition, new_game_state);
-                }
-                (new_white_board_states, new_black_board_states)
+            match new_board_state_or_stopped_reason {
+                Ok(board_states) => {board_states},
+                Err(stopped_reason) => {
+                    return MoveResult::Stopped(stopped_reason, new_game_state);
+                },
             }
         };
-
-        debug_assert!(
-            {
-                let white_states_count = new_white_board_states_history.len() as isize;
-                let black_states_count = new_black_board_states_history.len() as isize;
-                (white_states_count-black_states_count).abs() <2
-            },
-            "number of white({})/black({}) board_states can only differ by 1",
-            new_white_board_states_history.len(),
-            new_black_board_states_history.len(),
-        );
-        debug_assert!(
-            {
-                if move_stats.did_catch_figure || move_stats.did_move_pawn {
-                    let white_states_count = new_white_board_states_history.len() as isize;
-                    let black_states_count = new_black_board_states_history.len() as isize;
-                    match new_game_state.turn_by {
-                        Color::White => {
-                            white_states_count == 1 && black_states_count == 0
-                        }
-                        Color::Black => {
-                            white_states_count == 0 && black_states_count == 1
-                        }
-                    }
-                } else {true}
-            },
-            "catching a figure or moving a pawn resets the board states: color {}, white# {}, black# {}",
-            new_game_state.turn_by,
-            new_white_board_states_history.len(),
-            new_black_board_states_history.len(),
-        );
 
         let new_game = Game {
             latest_state: new_game_state,
             reachable_moves,
-            white_board_states_history: new_white_board_states_history,
-            black_board_states_history: new_black_board_states_history,
+            board_states: new_board_states,
         };
         let move_result = MoveResult::Ongoing(new_game, move_stats);
         move_result
@@ -203,10 +118,10 @@ impl str::FromStr for Game {
 
 fn game_by_figures_on_board(trimmed_game_config: &str) -> Result<Game, ChessError> {
     let game_state = trimmed_game_config.parse::<GameState>()?;
-    if let Err(stoppedReason) = verify_game_state(&game_state) {
+    if let Err(stopped_reason) = verify_game_state(&game_state) {
         return Err(ChessError {
-            msg: format!("game_state {} failed to pass verification: {:?}", game_state, &stoppedReason),
-            kind: ErrorKind::HighLevelErr(stoppedReason),
+            msg: format!("game_state {} failed to pass verification: {:?}", game_state, &stopped_reason),
+            kind: ErrorKind::HighLevelErr(stopped_reason),
         })
     }
     Ok(Game::from_state(game_state))

@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use crate::game::StoppedReason;
 use crate::base::Move;
 
 pub(crate) mod frontend;

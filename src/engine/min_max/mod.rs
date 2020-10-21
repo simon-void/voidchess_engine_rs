@@ -2,7 +2,6 @@ use crate::game::{*};
 use crate::engine::evaluations::{Evaluation, DrawReason, sort_evaluations_best_first};
 use crate::base::{Color, Move};
 use crate::engine::static_eval::{static_eval, StaticEvalType};
-use crate::engine::evaluations::Evaluation::{WinIn, LoseIn};
 
 mod pruner;
 
