@@ -1,5 +1,5 @@
 use crate::game::{*};
-use crate::engine::evaluations::{Evaluation, DrawReason, sort_evaluations_best_first};
+use crate::engine::evaluations::{Evaluation, DrawReason, sort_evaluations_best_last, MIN_EVALUATION, MAX_EVALUATION};
 use crate::base::{Color, Move};
 use crate::engine::static_eval::{static_eval, StaticEvalType};
 
@@ -10,6 +10,7 @@ pub fn evaluate_move(
     a_move: &Move,
     move_depth: usize,
     evaluate_for: Color,
+    opt_current_max_one_level_up: Option<&Evaluation>,
     eval_type: StaticEvalType,
 ) -> Evaluation {
     let new_half_step: usize = 1;
@@ -22,8 +23,16 @@ pub fn evaluate_move(
             let half_step_depth = 2 * move_depth;
             let moves = game.get_reachable_moves();
             let max_eval = moves.iter().map(|next_move|
-                get_min(&game, next_move, new_half_step, half_step_depth, evaluate_for, eval_type)
-            ).max_by(sort_evaluations_best_first).unwrap();
+                get_max_after(
+                    &game,
+                    next_move,
+                    new_half_step,
+                    half_step_depth,
+                    evaluate_for,
+                    opt_current_max_one_level_up.unwrap_or(&MAX_EVALUATION),
+                    eval_type
+                )
+            ).min().unwrap();
 
             if is_max_eval_actually_stalemate(&max_eval, new_half_step, &game) {
                 Evaluation::Draw(DrawReason::StaleMate)
@@ -34,7 +43,15 @@ pub fn evaluate_move(
     };
 }
 
-fn get_min(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth: usize, evaluate_for: Color, eval_type: StaticEvalType) -> Evaluation {
+fn get_max_after(
+    old_game: &Game,
+    a_move: &Move,
+    old_half_step: usize,
+    half_step_depth: usize,
+    evaluate_for: Color,
+    current_min_one_level_up: &Evaluation,
+    eval_type: StaticEvalType
+) -> Evaluation {
     let move_result = old_game.play(a_move);
     let new_half_step = old_half_step + 1;
 
@@ -54,20 +71,47 @@ fn get_min(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth
                 return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
             }
             let moves = game.get_reachable_moves();
-            let min_eval = moves.iter().map(|next_move|
-                get_max(&game, next_move, new_half_step, half_step_depth, evaluate_for, eval_type)
-            ).min_by(sort_evaluations_best_first).unwrap();
+            let mut current_max = MIN_EVALUATION;
+            for next_move in moves.iter() {
+                let eval = get_min_after(
+                    &game,
+                    next_move,
+                    new_half_step,
+                    half_step_depth,
+                    evaluate_for,
+                    &current_max,
+                    eval_type
+                );
+                if eval>current_max {
+                    current_max = eval;
+                    if eval >= *current_min_one_level_up {
+                        return eval;
+                    }
+                }
+            }
 
-            if is_min_eval_actually_stalemate(&min_eval, new_half_step, &game) {
+            // current_max = moves.iter().map(|next_move|
+            //     get_min_after(&game, next_move, new_half_step, half_step_depth, evaluate_for, &MAX_EVALUATION, eval_type)
+            // ).max().unwrap();
+
+            if is_min_eval_actually_stalemate(&current_max, new_half_step, &game) {
                 Evaluation::Draw(DrawReason::StaleMate)
             } else {
-                min_eval
+                current_max
             }
         }
     };
 }
 
-fn get_max(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth: usize, evaluate_for: Color, eval_type: StaticEvalType) -> Evaluation {
+fn get_min_after(
+    old_game: &Game,
+    a_move: &Move,
+    old_half_step: usize,
+    half_step_depth: usize,
+    evaluate_for: Color,
+    current_max_one_level_up: &Evaluation,
+    eval_type: StaticEvalType
+) -> Evaluation {
     let move_result = old_game.play(a_move);
     let new_half_step = old_half_step + 1;
 
@@ -82,14 +126,33 @@ fn get_max(old_game: &Game, a_move: &Move, old_half_step: usize, half_step_depth
                 return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
             }
             let moves = game.get_reachable_moves();
-            let max_eval = moves.iter().map(|next_move|
-                get_min(&game, next_move, new_half_step, half_step_depth, evaluate_for, eval_type)
-            ).max_by(sort_evaluations_best_first).unwrap();
+            let mut current_min = MAX_EVALUATION;
+            for next_move in moves.iter() {
+                let eval = get_max_after(
+                    &game,
+                    next_move,
+                    new_half_step,
+                    half_step_depth,
+                    evaluate_for,
+                    &current_min,
+                    eval_type
+                );
+                if eval<current_min {
+                    current_min = eval;
+                    if eval <= *current_max_one_level_up {
+                        return eval;
+                    }
+                }
+            }
 
-            if is_max_eval_actually_stalemate(&max_eval, new_half_step, &game) {
+            // current_min = moves.iter().map(|next_move|
+            //     get_max_after(&game, next_move, new_half_step, half_step_depth, evaluate_for, &MIN_EVALUATION, eval_type)
+            // ).min().unwrap();
+
+            if is_max_eval_actually_stalemate(&current_min, new_half_step, &game) {
                 Evaluation::Draw(DrawReason::StaleMate)
             } else {
-                max_eval
+                current_min
             }
         }
     };
@@ -170,6 +233,7 @@ mod tests {
             &next_move,
             2,
             Color::White,
+            None,
             StaticEvalType::Default,
         );
         assert_eq!(

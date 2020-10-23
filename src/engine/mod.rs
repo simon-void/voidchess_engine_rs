@@ -26,8 +26,7 @@ pub fn evaluate(game_config: &str, move_depth: usize) -> GameEvaluation {
         Ok(game) => {game}
     };
 
-    let evaluated_moves: Vec<EvaluatedMove> = evaluate_game(&game, move_depth);
-    let best_move: &EvaluatedMove = evaluated_moves.first().unwrap();
+    let best_move: EvaluatedMove = evaluate_game(&game, move_depth);
 
     if let Evaluation::LoseIn(1, _) = best_move.evaluation {
         return if game.is_active_king_in_check() {
@@ -40,29 +39,28 @@ pub fn evaluate(game_config: &str, move_depth: usize) -> GameEvaluation {
     GameEvaluation::MoveToPlay(best_move.a_move, MoveEvaluation::from(&best_move.evaluation))
 }
 
-fn evaluate_game(game: &Game, move_depth: usize) -> Vec<EvaluatedMove> {
-    // let mut results: Vec<EvaluatedMove> = vec![];
-    // for next_move in game.get_reachable_moves().iter() {
-    //     let eval = evaluate_move(&game, next_move, 3, game.get_game_state().turn_by, StaticEvalType::default);
-    //     results.push(EvaluatedMove{a_move: *next_move, evaluation: eval,})
-    // }
+fn evaluate_game(game: &Game, move_depth: usize) -> EvaluatedMove {
 
     let eval_type = StaticEvalType::Default;
-    let mut results: Vec<EvaluatedMove> = game.get_reachable_moves().iter().map(|next_move| {
+    let mut evaluated_moves: Vec<EvaluatedMove> = game.get_reachable_moves().iter().map(|next_move| {
         let evaluation = evaluate_move(
             &game,
             next_move,
             move_depth,
             game.get_game_state().turn_by,
+            None,
             eval_type,
         );
         EvaluatedMove { a_move: *next_move, evaluation }
     }).collect();
 
-    results.sort_unstable_by(|e_m1, e_m2|
-        sort_evaluations_best_first(&e_m1.evaluation, &e_m2.evaluation)
-    );
-    results
+    evaluated_moves.sort_unstable_by(|e_m1, e_m2| e_m2.evaluation.cmp(&e_m1.evaluation));
+
+    evaluated_moves.iter().for_each(|it|{
+        println!("{} - {:?}", it.a_move, it.evaluation);
+    });
+
+    evaluated_moves.remove(0)
 }
 
 //------------------------------Tests------------------------
