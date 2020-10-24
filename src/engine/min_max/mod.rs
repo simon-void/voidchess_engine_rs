@@ -1,6 +1,6 @@
 use crate::game::{*};
 use crate::engine::evaluations::{Evaluation, DrawReason, sort_evaluations_best_last, MIN_EVALUATION, MAX_EVALUATION};
-use crate::base::{Color, Move};
+use crate::base::{Color, Move, Moves};
 use crate::engine::static_eval::{static_eval, StaticEvalType};
 
 mod pruner;
@@ -72,7 +72,7 @@ fn get_max_after(
             }
             let moves = game.get_reachable_moves();
             let mut current_max = MIN_EVALUATION;
-            for next_move in moves.iter() {
+            for next_move in scramble(moves).iter() {
                 let eval = get_min_after(
                     &game,
                     next_move,
@@ -127,7 +127,7 @@ fn get_min_after(
             }
             let moves = game.get_reachable_moves();
             let mut current_min = MAX_EVALUATION;
-            for next_move in moves.iter() {
+            for next_move in scramble(moves).iter() {
                 let eval = get_max_after(
                     &game,
                     next_move,
@@ -200,6 +200,18 @@ fn is_min_eval_actually_stalemate(min_eval: &Evaluation, half_step: usize, game:
 fn get_lose_eval(game_state: &GameState, lost_after_nr_of_half_steps: usize, evaluate_for: Color, eval_type: StaticEvalType) -> Evaluation {
     debug_assert!(lost_after_nr_of_half_steps%2==1, "get_lose_eval's half_step is supposed to be odd, but was {}", lost_after_nr_of_half_steps);
     Evaluation::LoseIn(lost_after_nr_of_half_steps as u8, static_eval(game_state, eval_type, evaluate_for))
+}
+
+// improves the performance of alpha-beta pruning
+fn scramble(moves: &Moves) -> Moves {
+    let mut clones = moves.clone();
+    let nr_of_moves = moves.len();
+    if nr_of_moves > 4 {
+        for start in (1..(nr_of_moves - 1) / 2).step_by(2) {
+            clones.swap(start, nr_of_moves - start);
+        }
+    }
+    clones
 }
 
 //------------------------------Tests------------------------
