@@ -1,4 +1,4 @@
-use voidchess_engine_rs::{Game, evaluate};
+use voidchess_engine_rs::{evaluate};
 
 fn main() {
     println!("Hello VoidChess");

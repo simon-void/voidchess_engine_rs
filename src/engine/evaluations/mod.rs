@@ -23,10 +23,6 @@ pub enum DrawReason {
 pub const MIN_EVALUATION: Evaluation = Evaluation::LoseIn(0, f32::MIN);
 pub const MAX_EVALUATION: Evaluation = Evaluation::WinIn(0);
 
-pub fn sort_evaluations_best_last(eval1: &Evaluation, eval2: &Evaluation) -> Ordering {
-    (*eval1).partial_cmp(eval2).unwrap()
-}
-
 impl Eq for Evaluation {}
 
 impl Ord for Evaluation {
@@ -106,7 +102,7 @@ mod tests {
     //♔♕♗♘♖♙♚♛♝♞♜♟
 
     #[test]
-    fn test_sort_evaluations_best_last() {
+    fn test_sort_evaluations() {
         let e01 = Evaluation::WinIn(1);
         let e02 = Evaluation::WinIn(3);
         let e03 = Evaluation::Numeric(3.4);
@@ -127,7 +123,9 @@ mod tests {
          let mut actual_sorted_evaluations: Vec<Evaluation> = vec![
              e06, e02, e16, e04, e01, e07, e14, e08, e03, e09, e05, e15, e13, e11, e10, e12,
          ];
-        actual_sorted_evaluations.sort_unstable_by(sort_evaluations_best_last);
+        actual_sorted_evaluations.sort_unstable_by(
+            Evaluation::cmp
+        );
 
         let expected_sorted_evaluations: Vec<Evaluation> = vec![
             e16, e15, e14, e13, e12, e11, e10, e09, e08, e07, e06, e05, e04, e03, e02, e01,

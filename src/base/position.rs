@@ -5,7 +5,6 @@ use std::str;
 use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
 use tinyvec::alloc::fmt::Formatter;
-use crate::figure::Figure;
 
 #[derive(Copy, Clone)]
 pub struct Position {
@@ -187,6 +186,44 @@ impl Position {
         return Position::new_unchecked(
             self.column, 7-self.row,
         )
+    }
+
+    pub fn get_direction(&self, to: Position) -> Option<Direction> {
+        if *self == to {
+           return None;
+        }
+        let row_diff = to.row - self.row;
+        let column_diff = to.column - self.column;
+        if row_diff == 0 {
+            return if column_diff.is_positive() {
+                Some(Direction::Right)
+            } else {
+                Some(Direction::Left)
+            }
+        }
+        if column_diff == 0 {
+            return if row_diff.is_positive() {
+                Some(Direction::Up)
+            } else {
+                Some(Direction::Down)
+            }
+        }
+        if row_diff.abs() != column_diff.abs() {
+            return None;
+        }
+        return if row_diff.is_positive() {
+            if column_diff.is_positive() {
+                Some(Direction::UpRight)
+            } else {
+                Some(Direction::UpLeft)
+            }
+        } else {
+            if column_diff.is_positive() {
+                Some(Direction::DownRight)
+            } else {
+                Some(Direction::DownLeft)
+            }
+        }
     }
 }
 
@@ -378,6 +415,20 @@ impl Direction {
             Direction::UpLeft => Direction::DownRight,
         }
     }
+
+    pub fn is_straight(&self) -> bool {
+        match self {
+            Direction::Up | Direction::Down | Direction::Left | Direction::Right => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_diagonal(&self) -> bool {
+        match self {
+            Direction::Up | Direction::Down | Direction::Left | Direction::Right => false,
+            _ => true,
+        }
+    }
 }
 
 pub static ALL_DIRECTIONS: [Direction; 8] = [
@@ -454,5 +505,27 @@ mod tests {
             Some(pos) => {format!("{}", pos)}
         } ;
         assert_eq!(end_pos_string, String::from(expected_end_pos_str));
+    }
+
+    #[rstest(
+    from_str, to_str, expected_direction,
+    case("e4", "e6", Some(Direction::Up)),
+    case("e4", "g6", Some(Direction::UpRight)),
+    case("e4", "g4", Some(Direction::Right)),
+    case("e4", "g2", Some(Direction::DownRight)),
+    case("e4", "e2", Some(Direction::Down)),
+    case("e4", "c2", Some(Direction::DownLeft)),
+    case("e4", "c4", Some(Direction::Left)),
+    case("e4", "c6", Some(Direction::UpLeft)),
+    case("e4", "e4", None),
+    case("e4", "a5", None),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_get_direction(from_str: &str, to_str: &str, expected_direction: Option<Direction>) {
+        let from = from_str.parse::<Position>().unwrap();
+        let to = to_str.parse::<Position>().unwrap();
+
+        let actual_opt_direction = from.get_direction(to);
+        assert_eq!(actual_opt_direction, expected_direction);
     }
 }

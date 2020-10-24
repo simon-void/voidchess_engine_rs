@@ -6,61 +6,61 @@ use crate::figure::functions::castling::{is_king_side_castling_allowed, is_queen
 pub fn for_reachable_moves(
     fig_type: FigureType,
     pos: Position,
-    match_state: &GameState,
+    game_state: &GameState,
     move_collector: &mut Moves,
 ) {
     match fig_type {
         FigureType::Pawn => for_reachable_pawn_moves(
-            match_state.turn_by,
+            game_state.turn_by,
             pos,
-            &match_state.board,
-            match_state.en_passant_intercept_pos,
-            move_collector
+            &game_state.board,
+            game_state.en_passant_intercept_pos,
+            move_collector,
         ),
         FigureType::Rook => for_reachable_rook_moves(
-            match_state.turn_by,
+            game_state.turn_by,
             pos,
-            &match_state.board,
-            move_collector
+            &game_state.board,
+            move_collector,
         ),
         FigureType::Knight => for_reachable_knight_moves(
-            match_state.turn_by,
+            game_state.turn_by,
             pos,
-            &match_state.board,
-            move_collector
+            &game_state.board,
+            move_collector,
         ),
         FigureType::Bishop => for_reachable_bishop_moves(
-            match_state.turn_by,
+            game_state.turn_by,
             pos,
-            &match_state.board,
-            move_collector
+            &game_state.board,
+            move_collector,
         ),
         FigureType::Queen => for_reachable_queen_moves(
-            match_state.turn_by,
+            game_state.turn_by,
             pos,
-            &match_state.board,
-            move_collector
+            &game_state.board,
+            move_collector,
         ),
         FigureType::King => {
             let is_queen_side_castling_still_possible: bool;
             let is_king_side_castling_still_possible: bool;
-            match match_state.turn_by {
+            match game_state.turn_by {
                 Color::White => {
-                    is_queen_side_castling_still_possible = match_state.is_white_queen_side_castling_still_possible.get_value();
-                    is_king_side_castling_still_possible = match_state.is_white_king_side_castling_still_possible.get_value();
+                    is_queen_side_castling_still_possible = game_state.is_white_queen_side_castling_still_possible.get_value();
+                    is_king_side_castling_still_possible = game_state.is_white_king_side_castling_still_possible.get_value();
                 },
                 Color::Black => {
-                    is_queen_side_castling_still_possible = match_state.is_black_queen_side_castling_still_possible.get_value();
-                    is_king_side_castling_still_possible = match_state.is_black_king_side_castling_still_possible.get_value();
+                    is_queen_side_castling_still_possible = game_state.is_black_queen_side_castling_still_possible.get_value();
+                    is_king_side_castling_still_possible = game_state.is_black_king_side_castling_still_possible.get_value();
                 },
             }
             for_reachable_king_moves(
-                match_state.turn_by,
+                game_state.turn_by,
                 pos,
-                &match_state.board,
+                &game_state.board,
                 is_queen_side_castling_still_possible,
                 is_king_side_castling_still_possible,
-                move_collector
+                move_collector,
             )
         },
     };
@@ -229,7 +229,7 @@ mod tests {
     use tinyvec::*;
 
     #[test]
-    fn testing_works() {
+    fn testing_for_reachable_knight_moves() {
         let mut move_collection: Moves = tiny_vec!();
         for_reachable_knight_moves(
             Color::White,

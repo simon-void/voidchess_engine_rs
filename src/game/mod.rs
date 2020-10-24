@@ -238,7 +238,7 @@ mod tests {
         //     ThreeTimesRepetition,
         //     NoChangeIn50Moves,
         // }
-        let game = match game_config.parse::<Game>() {
+        match game_config.parse::<Game>() {
             Err(err) => {
                 if let ErrorKind::HighLevelErr(actual_stopped_reason) = err.kind {
                     assert_eq!(actual_stopped_reason, expected_stop_reason);

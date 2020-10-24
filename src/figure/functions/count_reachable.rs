@@ -1,7 +1,6 @@
 use crate::figure::{FigureType};
-use crate::game::{Board, FieldContent, GameState};
-use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, Moves, Position, Move};
-use crate::figure::functions::castling::{is_king_side_castling_allowed, is_queen_side_castling_allowed};
+use crate::game::{Board};
+use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Position};
 
 pub fn count_reachable_moves(
     fig_type: FigureType,
@@ -81,7 +80,7 @@ fn count_reachable_queen_moves(
 
 //------------------------------Tests------------------------
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+// }

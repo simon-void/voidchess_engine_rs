@@ -1,5 +1,5 @@
 use crate::game::{*};
-use crate::engine::evaluations::{Evaluation, DrawReason, sort_evaluations_best_last, MIN_EVALUATION, MAX_EVALUATION};
+use crate::engine::evaluations::{Evaluation, DrawReason, MIN_EVALUATION, MAX_EVALUATION};
 use crate::base::{Color, Move, Moves};
 use crate::engine::static_eval::{static_eval, StaticEvalType};
 

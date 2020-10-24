@@ -423,7 +423,7 @@ impl GameState {
             for i in 0..16 as usize {
                 match figures_of_color_with_pos[i] {
                     Some((fig_type, pos)) => {
-                        count_reachable_moves(fig_type, color, pos, &game_state.board);
+                        reachable_move_counter += count_reachable_moves(fig_type, color, pos, &game_state.board);
                     },
                     None => {
                         break;
