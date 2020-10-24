@@ -5,6 +5,7 @@ use std::str;
 use crate::base::{Color, ChessError, ErrorKind};
 use crate::game::{Board, FieldContent, USIZE_RANGE_063};
 use tinyvec::alloc::fmt::Formatter;
+use crate::figure::Figure;
 
 #[derive(Copy, Clone)]
 pub struct Position {
@@ -99,6 +100,62 @@ impl Position {
         row_delta: i8,
     ) -> Option<Position> {
         Position::new_checked(self.column + column_delta, self.row + row_delta)
+    }
+
+    pub fn count_reachable_directed_positions(
+        &self,
+        fig_color: Color,
+        direction: Direction,
+        board: &Board,
+    ) -> usize {
+        let mut last_pos = *self;
+        let mut counter: usize = 0;
+        loop {
+            let new_pos = match last_pos.step(direction) {
+                None => {break;}
+                Some(pos) => {pos}
+            };
+            match board.get_figure(new_pos) {
+                None => {counter += 1;}
+                Some(figure) => {
+                    if figure.color!=fig_color {
+                        counter += 1;
+                    }
+                    break;
+                }
+            }
+            last_pos = new_pos;
+        }
+        counter
+    }
+
+    pub fn count_reachable_knight_positions(
+        &self,
+        fig_color: Color,
+        board: &Board,
+    ) -> usize {
+        [
+            self.jump(2, -1),
+            self.jump(2, 1),
+            self.jump(-2, -1),
+            self.jump(-2, 1),
+            self.jump(1, -2),
+            self.jump(1, 2),
+            self.jump(-1, -2),
+            self.jump(-1, 2),
+        ].iter().fold(0, |count, opt_pos| {
+            count + match opt_pos {
+                None => { 1 }
+                Some(pos) => {
+                    match board.get_figure(*pos) {
+                        None => { 1 }
+                        Some(figure) => {
+                            if figure.color == fig_color { 0 } else { 1 }
+                        }
+                    }
+                }
+            }
+        })
     }
 
     pub fn reachable_directed_positions<'a, 'b>(

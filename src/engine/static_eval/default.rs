@@ -2,12 +2,16 @@ use crate::base::{Color, Direction, Position};
 use crate::figure::FigureType;
 use crate::game::GameState;
 
+const VALUE_OF_AREA: f32 = 0.015;
+
 pub fn default_static_eval_for_white(game_state: &GameState) -> f32 {
     let (white_figures, black_figures) = game_state.board.get_white_and_black_figures();
     let white_value = get_value(game_state, white_figures, Color::White);
     let black_value = get_value(game_state, black_figures, Color::Black);
 
-    white_value - black_value
+    let rules_area_diff_for_white = game_state.count_reachable_moves_diff_for_white();
+
+    (white_value - black_value) + (rules_area_diff_for_white as f32 * VALUE_OF_AREA)
 }
 
 fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 16], color: Color) -> f32 {

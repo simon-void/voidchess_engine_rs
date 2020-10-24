@@ -4,6 +4,7 @@ use crate::game::{Board};
 use crate::figure::functions::check_search::is_king_in_check;
 use tinyvec::*;
 use std::{fmt,str};
+use crate::figure::functions::count_reachable::count_reachable_moves;
 
 #[derive(Clone, Debug)]
 pub struct GameState {
@@ -220,25 +221,6 @@ impl GameState {
         }
     }
 
-    pub fn get_reachable_moves(&self) -> Moves {
-        let mut move_collector: Moves = tiny_vec!();
-        let figures_of_color_with_pos: [Option<(Figure, Position)>; 16] =
-            self.board.get_all_figures_of_color(self.turn_by);
-
-        for i in 0..16 as usize {
-            match figures_of_color_with_pos[i] {
-                Some((figure, pos)) => {
-                    figure.for_reachable_moves(pos, self, &mut move_collector);
-                },
-                None => {
-                    break;
-                }
-            }
-        }
-
-        move_collector
-    }
-
     pub fn do_move(&self, next_move: Move) -> (GameState, MoveStats) {
         debug_assert!(
             next_move.to != self.white_king_pos && next_move.to != self.black_king_pos,
@@ -404,6 +386,65 @@ impl GameState {
         },
          move_stats,
         )
+    }
+
+    pub fn get_reachable_moves(&self) -> Moves {
+        let mut move_collector: Moves = tiny_vec!();
+        let figures_of_color_with_pos: [Option<(Figure, Position)>; 16] =
+            self.board.get_all_figures_of_color(self.turn_by);
+
+        for i in 0..16 as usize {
+            match figures_of_color_with_pos[i] {
+                Some((figure, pos)) => {
+                    figure.for_reachable_moves(pos, self, &mut move_collector);
+                },
+                None => {
+                    break;
+                }
+            }
+        }
+
+        move_collector
+    }
+
+    pub fn count_reachable_moves_diff_for_white(&self) -> isize {
+
+        let (
+            white_figures_and_their_pos,
+            black_figures_and_their_pos,
+        ) = self.board.get_white_and_black_figures();
+
+        fn count_reachable_moves_for_color(
+            game_state: &GameState,
+            color: Color,
+            figures_of_color_with_pos: [Option<(FigureType, Position)>; 16],
+        ) -> usize {
+            let mut reachable_move_counter: usize = 0;
+            for i in 0..16 as usize {
+                match figures_of_color_with_pos[i] {
+                    Some((fig_type, pos)) => {
+                        count_reachable_moves(fig_type, color, pos, &game_state.board);
+                    },
+                    None => {
+                        break;
+                    }
+                }
+            }
+            reachable_move_counter
+        }
+
+        let white_reachable_moves_count = count_reachable_moves_for_color(
+            self,
+            Color::White,
+            white_figures_and_their_pos,
+        ) as isize;
+        let black_reachable_moves_count = count_reachable_moves_for_color(
+            self,
+            Color::Black,
+            black_figures_and_their_pos,
+        ) as isize;
+
+        white_reachable_moves_count - black_reachable_moves_count
     }
 
     pub fn get_passive_kings_pos(&self) -> Position {
