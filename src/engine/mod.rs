@@ -48,7 +48,6 @@ fn evaluate_game(game: &Game, move_depth: usize) -> EvaluatedMove {
             next_move,
             move_depth,
             game.get_game_state().turn_by,
-            None,
             eval_type,
         );
         EvaluatedMove { a_move: *next_move, evaluation }

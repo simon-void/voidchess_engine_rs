@@ -10,7 +10,6 @@ pub fn evaluate_move(
     a_move: &Move,
     move_depth: usize,
     evaluate_for: Color,
-    opt_current_max_one_level_up: Option<&Evaluation>,
     eval_type: StaticEvalType,
 ) -> Evaluation {
     let new_half_step: usize = 1;
@@ -22,22 +21,29 @@ pub fn evaluate_move(
         MoveResult::Ongoing(game, _was_figure_caught) => {
             let half_step_depth = 2 * move_depth;
             let moves = game.get_reachable_moves();
-            let max_eval = moves.iter().map(|next_move|
-                get_max_after(
+            let mut current_min = MAX_EVALUATION;
+            for next_move in scramble(moves).iter() {
+                let eval = get_max_after(
                     &game,
                     next_move,
                     new_half_step,
                     half_step_depth,
                     evaluate_for,
-                    opt_current_max_one_level_up.unwrap_or(&MAX_EVALUATION),
+                    &current_min,
                     eval_type
-                )
-            ).min().unwrap();
+                );
+                if eval<current_min {
+                    current_min = eval;
+                    // if eval <= *current_max_one_level_up {
+                    //     return eval;
+                    // }
+                }
+            }
 
-            if is_max_eval_actually_stalemate(&max_eval, new_half_step, &game) {
+            if is_max_eval_actually_stalemate(&current_min, new_half_step, &game) {
                 Evaluation::Draw(DrawReason::StaleMate)
             } else {
-                max_eval
+                current_min
             }
         }
     };
@@ -245,7 +251,6 @@ mod tests {
             &next_move,
             2,
             Color::White,
-            None,
             StaticEvalType::Default,
         );
         assert_eq!(
