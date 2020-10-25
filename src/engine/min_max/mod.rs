@@ -7,12 +7,12 @@ mod pruner;
 
 pub fn evaluate_move(
     old_game: &Game,
-    a_move: &Move,
+    a_move: Move,
     move_depth: usize,
     evaluate_for: Color,
     eval_type: StaticEvalType,
 ) -> Evaluation {
-    let current_max_one_level_up = &MIN_EVALUATION;
+    let current_max_one_level_up = MIN_EVALUATION;
 
     get_min_after(
         old_game,
@@ -27,11 +27,11 @@ pub fn evaluate_move(
 
 fn get_max_after(
     old_game: &Game,
-    a_move: &Move,
+    a_move: Move,
     old_half_step: usize,
     half_step_depth: usize,
     evaluate_for: Color,
-    current_min_one_level_up: &Evaluation,
+    current_min_one_level_up: Evaluation,
     eval_type: StaticEvalType
 ) -> Evaluation {
     let move_result = old_game.play(a_move);
@@ -57,26 +57,22 @@ fn get_max_after(
             for next_move in scramble(moves).iter() {
                 let eval = get_min_after(
                     &game,
-                    next_move,
+                    *next_move,
                     new_half_step,
                     half_step_depth,
                     evaluate_for,
-                    &current_max,
+                    current_max,
                     eval_type
                 );
                 if eval>current_max {
                     current_max = eval;
-                    if eval >= *current_min_one_level_up {
+                    if eval >= current_min_one_level_up {
                         return eval;
                     }
                 }
             }
 
-            // current_max = moves.iter().map(|next_move|
-            //     get_min_after(&game, next_move, new_half_step, half_step_depth, evaluate_for, &MAX_EVALUATION, eval_type)
-            // ).max().unwrap();
-
-            if is_min_eval_actually_stalemate(&current_max, new_half_step, &game) {
+            if is_max_eval_actually_stalemate(current_max, new_half_step, &game) {
                 Evaluation::Draw(DrawReason::StaleMate)
             } else {
                 current_max
@@ -87,11 +83,11 @@ fn get_max_after(
 
 fn get_min_after(
     old_game: &Game,
-    a_move: &Move,
+    a_move: Move,
     old_half_step: usize,
     half_step_depth: usize,
     evaluate_for: Color,
-    current_max_one_level_up: &Evaluation,
+    current_max_one_level_up: Evaluation,
     eval_type: StaticEvalType
 ) -> Evaluation {
     let move_result = old_game.play(a_move);
@@ -112,26 +108,22 @@ fn get_min_after(
             for next_move in scramble(moves).iter() {
                 let eval = get_max_after(
                     &game,
-                    next_move,
+                    *next_move,
                     new_half_step,
                     half_step_depth,
                     evaluate_for,
-                    &current_min,
+                    current_min,
                     eval_type
                 );
                 if eval<current_min {
                     current_min = eval;
-                    if eval <= *current_max_one_level_up {
+                    if eval <= current_max_one_level_up {
                         return eval;
                     }
                 }
             }
 
-            // current_min = moves.iter().map(|next_move|
-            //     get_max_after(&game, next_move, new_half_step, half_step_depth, evaluate_for, &MIN_EVALUATION, eval_type)
-            // ).min().unwrap();
-
-            if is_max_eval_actually_stalemate(&current_min, new_half_step, &game) {
+            if is_min_eval_actually_stalemate(current_min, new_half_step, &game) {
                 Evaluation::Draw(DrawReason::StaleMate)
             } else {
                 current_min
@@ -158,22 +150,22 @@ fn get_min_after_stopped_eval(
     }
 }
 
-fn is_max_eval_actually_stalemate(max_eval: &Evaluation, half_step: usize, game: &Game) -> bool {
+fn is_min_eval_actually_stalemate(max_eval: Evaluation, half_step: usize, game: &Game) -> bool {
     debug_assert!(half_step%2==1, "is_max_eval_actually_stalemate's half_step is supposed to be odd, but was {}", half_step);
     if let Evaluation::WinIn(win_in_half_step) = max_eval {
         debug_assert!(win_in_half_step%2==0, "is_max_eval_actually_stalemate's win_in_half_step is supposed to be even, but was {}", win_in_half_step);
-        if (*win_in_half_step) as usize == (half_step + 1) && !game.is_active_king_in_check() {
+        if win_in_half_step as usize == (half_step + 1) && !game.is_active_king_in_check() {
             return true;
         }
     }
     false
 }
 
-fn is_min_eval_actually_stalemate(min_eval: &Evaluation, half_step: usize, game: &Game) -> bool {
+fn is_max_eval_actually_stalemate(min_eval: Evaluation, half_step: usize, game: &Game) -> bool {
     debug_assert!(half_step%2==0, "is_min_eval_actually_stalemate's half_step is supposed to be even, but was {}", half_step);
     if let Evaluation::LoseIn(lose_in_half_step, _) = min_eval {
         debug_assert!(lose_in_half_step%2==1, "is_min_eval_actually_stalemate's half_step is supposed to be odd, but was {}", lose_in_half_step);
-        if (*lose_in_half_step) as usize == (half_step + 1) && !game.is_active_king_in_check() {
+        if lose_in_half_step as usize == (half_step + 1) && !game.is_active_king_in_check() {
             return true;
         }
     }
@@ -225,7 +217,7 @@ mod tests {
         let next_move = next_move_str.parse::<Move>().unwrap();
         let actual_evaluation = evaluate_move(
             &game,
-            &next_move,
+            next_move,
             2,
             Color::White,
             StaticEvalType::Default,

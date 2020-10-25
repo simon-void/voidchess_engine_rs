@@ -21,7 +21,7 @@ fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 1
         match opt_fig_data  {
             Some((fig_type, pos)) => {
                 let fig_value = match fig_type {
-                    FigureType::Pawn => get_pawn_value(game_state, pos, color, backward_left, backward_right),
+                    FigureType::Pawn => get_pawn_value(game_state, *pos, color, backward_left, backward_right),
                     FigureType::Rook => 5.0,
                     FigureType::Knight => 3.0,
                     FigureType::Bishop => 3.01,
@@ -40,14 +40,14 @@ fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 1
 
 fn get_pawn_value(
     game_state: &GameState,
-    pawn_pos: &Position,
+    pawn_pos: Position,
     color: Color,
     backward_left: Direction,
     backward_right: Direction,
 ) -> f32 {
     fn is_protected(
         game_state: &GameState,
-        pawn_pos: &Position,
+        pawn_pos: Position,
         color: Color,
         backward_left: Direction,
         backward_right: Direction,

@@ -45,7 +45,7 @@ fn evaluate_game(game: &Game, move_depth: usize) -> EvaluatedMove {
     let mut evaluated_moves: Vec<EvaluatedMove> = game.get_reachable_moves().iter().map(|next_move| {
         let evaluation = evaluate_move(
             &game,
-            next_move,
+            *next_move,
             move_depth,
             game.get_game_state().turn_by,
             eval_type,

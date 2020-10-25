@@ -606,7 +606,7 @@ impl fmt::Display for GameState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct MoveStats {
     pub did_catch_figure: bool,
     pub did_move_pawn: bool,

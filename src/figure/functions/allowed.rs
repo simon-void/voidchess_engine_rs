@@ -28,7 +28,7 @@ pub fn get_allowed_moves(game_config: &str) -> Vec<Move> {
 }
 
 fn is_not_bound(game: &Game, a_move: Move) -> bool {
-    match game.play(&a_move) {
+    match game.play(a_move) {
         MoveResult::Ongoing(_, _) => {true}
         MoveResult::Stopped(reason, _) => {
             reason!=StoppedReason::KingInCheckAfterMove
