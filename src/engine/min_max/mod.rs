@@ -12,41 +12,17 @@ pub fn evaluate_move(
     evaluate_for: Color,
     eval_type: StaticEvalType,
 ) -> Evaluation {
-    let new_half_step: usize = 1;
-    let move_result = old_game.play(a_move);
-    return match move_result {
-        MoveResult::Stopped(reason, final_game_state) => {
-            get_max_stopped_eval(reason, final_game_state, new_half_step, evaluate_for, eval_type)
-        }
-        MoveResult::Ongoing(game, _was_figure_caught) => {
-            let half_step_depth = 2 * move_depth;
-            let moves = game.get_reachable_moves();
-            let mut current_min = MAX_EVALUATION;
-            for next_move in scramble(moves).iter() {
-                let eval = get_max_after(
-                    &game,
-                    next_move,
-                    new_half_step,
-                    half_step_depth,
-                    evaluate_for,
-                    &current_min,
-                    eval_type
-                );
-                if eval<current_min {
-                    current_min = eval;
-                    // if eval <= *current_max_one_level_up {
-                    //     return eval;
-                    // }
-                }
-            }
+    let current_max_one_level_up = &MIN_EVALUATION;
 
-            if is_max_eval_actually_stalemate(&current_min, new_half_step, &game) {
-                Evaluation::Draw(DrawReason::StaleMate)
-            } else {
-                current_min
-            }
-        }
-    };
+    get_min_after(
+        old_game,
+        a_move,
+        0,
+        2 * move_depth,
+        evaluate_for,
+        current_max_one_level_up,
+        eval_type,
+    )
 }
 
 fn get_max_after(
@@ -125,7 +101,7 @@ fn get_min_after(
 
     return match move_result {
         MoveResult::Stopped(reason, final_game_state) => {
-            get_max_stopped_eval(reason, final_game_state, new_half_step, evaluate_for, eval_type)
+            get_min_after_stopped_eval(reason, final_game_state, new_half_step, evaluate_for, eval_type)
         }
         MoveResult::Ongoing(game, _was_figure_caught) => {
             if new_half_step >= half_step_depth {
@@ -164,13 +140,14 @@ fn get_min_after(
     };
 }
 
-fn get_max_stopped_eval(
+fn get_min_after_stopped_eval(
     reason: StoppedReason,
     final_game_state: GameState,
     new_half_step: usize,
     evaluate_for: Color,
     eval_type: StaticEvalType,
 ) -> Evaluation {
+    println!("get_min_after_stopped_eval reached with new_half_step {}", new_half_step);
     match reason {
         StoppedReason::KingInCheckAfterMove => {
             get_lose_eval(&final_game_state, new_half_step, evaluate_for, eval_type)

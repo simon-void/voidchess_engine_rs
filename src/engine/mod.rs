@@ -83,7 +83,7 @@ mod tests {
     case("b1-c3 b8-c6 c3-b1 c6-b8 b1-c3 b8-c6 c3-b1 c6-b8 b1-c3", 0, GameEvaluation::GameEnded(GameEndResult::Draw(DrawReason::ThreeTimesRepetition))),
     case("white ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", 0, GameEvaluation::GameEnded(GameEndResult::EngineWon)),
     case("black ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", 0, GameEvaluation::GameEnded(GameEndResult::EngineLost)),
-    case("white ♔g3 ♖d2 ♚g1 ♙c2 ♙d3", 0, GameEvaluation::MoveToPlay(Move::from_code("d2-d1"), MoveEvaluation::EngineCheckMatesIn(0))),
+    case("white ♔g3 ♖d2 ♚g1 ♙c2 ♙d3", 1, GameEvaluation::MoveToPlay(Move::from_code("d2-d1"), MoveEvaluation::EngineCheckMatesIn(0))),
     case("white ♔f3 ♖d2 ♚h1 ♙c2 ♙d3", 2, GameEvaluation::MoveToPlay(Move::from_code("f3-g3"), MoveEvaluation::EngineCheckMatesIn(1))),
     case("white ♔h6 ♙g6 ♚h8 ♗f5 ♙e4", 2, GameEvaluation::MoveToPlay(Move::from_code("g6-g7"), MoveEvaluation::EngineCheckMatesIn(1))),
     case("white ♔e3 ♖d2 ♚g1 ♙c2 ♙d3", 3, GameEvaluation::MoveToPlay(Move::from_code("e3-f3"), MoveEvaluation::EngineCheckMatesIn(2))),
