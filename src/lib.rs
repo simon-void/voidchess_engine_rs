@@ -6,3 +6,4 @@ mod engine;
 pub use crate::game::{Game};
 pub use crate::engine::evaluate;
 pub use crate::figure::functions::allowed::get_allowed_moves;
+pub use crate::engine::min_max::pruner::*;

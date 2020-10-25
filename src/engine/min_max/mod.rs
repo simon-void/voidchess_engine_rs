@@ -2,13 +2,14 @@ use crate::game::{*};
 use crate::engine::evaluations::{Evaluation, DrawReason, MIN_EVALUATION, MAX_EVALUATION};
 use crate::base::{Color, Move, Moves};
 use crate::engine::static_eval::{static_eval, StaticEvalType};
+use crate::engine::min_max::pruner::Pruner;
 
-mod pruner;
+pub(crate) mod pruner;
 
 pub fn evaluate_move(
     old_game: &Game,
     a_move: Move,
-    move_depth: usize,
+    pruner: Pruner,
     evaluate_for: Color,
     eval_type: StaticEvalType,
 ) -> Evaluation {
@@ -18,7 +19,8 @@ pub fn evaluate_move(
         old_game,
         a_move,
         0,
-        2 * move_depth,
+        pruner,
+        MoveStats::default(),
         evaluate_for,
         current_max_one_level_up,
         eval_type,
@@ -29,7 +31,8 @@ fn get_max_after(
     old_game: &Game,
     a_move: Move,
     old_half_step: usize,
-    half_step_depth: usize,
+    pruner: Pruner,
+    old_move_stats: MoveStats,
     evaluate_for: Color,
     current_min_one_level_up: Evaluation,
     eval_type: StaticEvalType
@@ -48,8 +51,8 @@ fn get_max_after(
                 StoppedReason::NoChangeIn50Moves => Evaluation::Draw(DrawReason::ThreeTimesRepetition),
             }
         }
-        MoveResult::Ongoing(game, _was_figure_caught) => {
-            if new_half_step >= half_step_depth {
+        MoveResult::Ongoing(game, move_stats) => {
+            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats) {
                 return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
             }
             let moves = game.get_reachable_moves();
@@ -59,7 +62,8 @@ fn get_max_after(
                     &game,
                     *next_move,
                     new_half_step,
-                    half_step_depth,
+                    pruner,
+                    move_stats,
                     evaluate_for,
                     current_max,
                     eval_type
@@ -85,7 +89,8 @@ fn get_min_after(
     old_game: &Game,
     a_move: Move,
     old_half_step: usize,
-    half_step_depth: usize,
+    pruner: Pruner,
+    old_move_stats: MoveStats,
     evaluate_for: Color,
     current_max_one_level_up: Evaluation,
     eval_type: StaticEvalType
@@ -99,8 +104,8 @@ fn get_min_after(
         MoveResult::Stopped(reason, final_game_state) => {
             get_min_after_stopped_eval(reason, final_game_state, new_half_step, evaluate_for, eval_type)
         }
-        MoveResult::Ongoing(game, _was_figure_caught) => {
-            if new_half_step >= half_step_depth {
+        MoveResult::Ongoing(game, move_stats) => {
+            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats) {
                 return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
             }
             let moves = game.get_reachable_moves();
@@ -110,7 +115,8 @@ fn get_min_after(
                     &game,
                     *next_move,
                     new_half_step,
-                    half_step_depth,
+                    pruner,
+                    move_stats,
                     evaluate_for,
                     current_min,
                     eval_type
@@ -197,6 +203,7 @@ mod tests {
     use rstest::*;
     use crate::engine::evaluations::*;
     use crate::engine::evaluations::testing::RoughEvaluation;
+    use crate::engine::min_max::pruner::PRUNER_L2;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 
@@ -218,7 +225,7 @@ mod tests {
         let actual_evaluation = evaluate_move(
             &game,
             next_move,
-            2,
+            PRUNER_L2,
             Color::White,
             StaticEvalType::Default,
         );
