@@ -1,8 +1,12 @@
 VoidchessEngineRS
 =================
 
-is an ongoing implementation of a chess engine in Rust meant to replace the original engine of
-[VoidChess](http://simon-void.github.io/voidchess).
+The web version of this chess engine can be played [here](https://simon-void.github.io/voidchess_engine_rs/).
+
+The project started as a Rust re-implementation of the chess engine of my older desktop chess program
+[VoidChess](http://simon-void.github.io/voidchess) which is written in Kotlin.
+
+
 
 ## Build Wasm Module
 
