@@ -111,6 +111,17 @@ export function get_greeting_for(name) {
     return takeObject(ret);
 }
 
+/**
+* @param {string} game_config
+* @returns {any}
+*/
+export function get_concatenated_allowed_moves(game_config) {
+    var ptr0 = passStringToWasm0(game_config, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    var ret = wasm.get_concatenated_allowed_moves(ptr0, len0);
+    return takeObject(ret);
+}
+
 async function load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
 

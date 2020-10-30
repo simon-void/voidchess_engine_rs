@@ -33,7 +33,7 @@ async function display_greeting(name) {
     console.log("init wasm");
     await init();
     console.log("invoking wasm");
-    let greeting = await wasm.get_greeting_for(name);
+    let greeting = await wasm.get_concatenated_allowed_moves("");
     console.log("received from wasm: " + greeting);
     setText(greeting);
 }

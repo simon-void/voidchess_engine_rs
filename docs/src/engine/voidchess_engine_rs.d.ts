@@ -5,12 +5,18 @@
 * @returns {any}
 */
 export function get_greeting_for(name: string): any;
+/**
+* @param {string} game_config
+* @returns {any}
+*/
+export function get_concatenated_allowed_moves(game_config: string): any;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly get_greeting_for: (a: number, b: number) => number;
+  readonly get_concatenated_allowed_moves: (a: number, b: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
 }
