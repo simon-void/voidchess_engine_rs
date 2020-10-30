@@ -1,0 +1,15 @@
+{
+  "name": "voidchess_engine_rs",
+  "collaborators": [
+    "StephanS <simon.void+github@gmail.com>"
+  ],
+  "version": "0.0.1",
+  "files": [
+    "voidchess_engine_rs_bg.wasm",
+    "voidchess_engine_rs.js",
+    "voidchess_engine_rs.d.ts"
+  ],
+  "module": "voidchess_engine_rs.js",
+  "types": "voidchess_engine_rs.d.ts",
+  "sideEffects": false
+}

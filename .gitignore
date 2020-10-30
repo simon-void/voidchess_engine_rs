@@ -41,3 +41,6 @@ Cargo.lock
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,intellij,rust
 
 .directory
+
+# the wasm module that has been generated from the rust-code
+pkg
