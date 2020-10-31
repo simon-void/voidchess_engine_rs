@@ -96,6 +96,41 @@ const _allowedMovesAtWhiteStartClassic = arrayOfMovesToMoveMap(
     JSON.parse('["b1-c3", "b1-a3", "g1-h3", "g1-f3", "a2-a3", "a2-a4", "b2-b3", "b2-b4", "c2-c3", "c2-c4", "d2-d3", "d2-d4", "e2-e3", "e2-e4", "f2-f3", "f2-f4", "g2-g3", "g2-g4", "h2-h3", "h2-h4"]')
 );
 
+function BoardModel(gameModel) {
+    let self = this;
+    self.board = new Chessboard(
+        document.getElementById("board"),
+        {
+            position: "empty",
+            moveInputMode: MOVE_INPUT_MODE.dragPiece,
+            sprite: {url: "./assets/images/chessboard-sprite.svg"},
+            style: {
+                cssClass: "default",
+                showCoordinates: false, // show ranks and files
+                showBorder: true, // display a border around the board
+            }
+        }
+    );
+    self.board.enableMoveInput(event => {
+        switch (event.type) {
+            case INPUT_EVENT_TYPE.moveStart:
+                let start_accepted = gameModel.allowedMoves().has(event.square);
+                log(`moveStart: ${event.square}, accepted: ${start_accepted}`)
+                return start_accepted;
+            case INPUT_EVENT_TYPE.moveDone:
+                let moveOrNull = gameModel.allowedMoves().get(event.squareFrom).find(move=>move.to===event.squareTo);
+                let move_accepted = moveOrNull != null;
+                log(`moveDone: ${event.squareFrom}-${event.squareTo}, accepted: ${move_accepted}`)
+                if(move_accepted) {
+                    gameModel.informOfMove(moveOrNull)
+                }
+                return move_accepted;
+            case INPUT_EVENT_TYPE.moveCanceled:
+                log(`moveCanceled`)
+        }
+    });
+}
+
 function GameModel() {
     let self = this;
     self.state = ko.observable(states.LOADING)
@@ -127,7 +162,9 @@ function GameModel() {
                 log(`moveCanceled`)
         }
     });
-    // window.gameModel = self;
+    self.informOfMove = function (move) {
+        self.movesPlayed.push(move.asStr);
+    };
 }
 
 window.onload = function () {
