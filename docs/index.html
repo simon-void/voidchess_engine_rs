@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0"/>
     <link rel="stylesheet" href="./styles/page.css"/>
     <link rel="stylesheet" href="./styles/cm-chessboard.css"/>
-    <script nomodule src="./src/module-loader/babel-browser-build.js"></script>
-    <script nomodule src="./src/module-loader/browser-es-module-loader.js"></script>
+    <script nomodule src="src/libs/babel-browser-build.js"></script>
+    <script nomodule src="src/libs/browser-es-module-loader.js"></script>
+    <script type='text/javascript' src="src/libs/knockout-3.5.1.js"></script>
 </head>
     <h1>VoidchessWeb</h1>
     <div>
@@ -15,9 +16,9 @@
         <!--button style="margin-bottom: 10px"
                 onclick="window.board.setOrientation(window.board.getOrientation() === 'w' ? 'b' : 'w')">Switch Orientation
         </button-->
+        <div>state: <span data-bind="text: state"></span></div>
         <button style="margin-bottom: 10px" id="greeting_button">Get Allowed Moves</button>
         <div id="output"></div>
-        <div id="msg_box"></div>
     </div>
 
     <br>

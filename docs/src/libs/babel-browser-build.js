@@ -3378,7 +3378,7 @@ module.exports={
         "spec": "latest",
         "type": "tag"
       },
-      "/Users/guybedford/Projects/browser-es-module-loader"
+      "/Users/guybedford/Projects/browser-es-libs"
     ]
   ],
   "_from": "babel-core@latest",
@@ -3414,7 +3414,7 @@ module.exports={
   "_shasum": "9c5fd658ba1772d28d721f6d25d968fc7ae21648",
   "_shrinkwrap": null,
   "_spec": "babel-core",
-  "_where": "/Users/guybedford/Projects/browser-es-module-loader",
+  "_where": "/Users/guybedford/Projects/browser-es-libs",
   "author": {
     "name": "Sebastian McKenzie",
     "email": "sebmck@gmail.com"
