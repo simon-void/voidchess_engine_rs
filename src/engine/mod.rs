@@ -69,9 +69,6 @@ fn evaluate_game(game: &Game, pruner: Pruner) -> EvaluatedMove {
 mod tests {
     use rstest::*;
     use super::*;
-    use crate::Game;
-    use crate::engine::evaluations::*;
-    use crate::engine::evaluations::frontend::*;
     use crate::base::Move;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟

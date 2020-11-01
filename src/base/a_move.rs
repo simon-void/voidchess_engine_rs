@@ -9,7 +9,7 @@ use tinyvec::alloc::fmt::Formatter;
 pub struct Move {
     pub from: Position,
     pub to: Position,
-    pub pawn_promo: PawnPromotion,
+    pub move_type: MoveType,
 }
 
 impl Move {
@@ -17,7 +17,7 @@ impl Move {
         Move {
             from,
             to,
-            pawn_promo: PawnPromotion::No,
+            move_type: MoveType::Normal,
         }
     }
 
@@ -29,7 +29,7 @@ impl Move {
         Move {
             from: self.from.toggle_row(),
             to: self.to.toggle_row(),
-            pawn_promo: self.pawn_promo,
+            move_type: self.move_type,
         }
     }
 }
@@ -40,7 +40,7 @@ impl str::FromStr for Move {
     fn from_str(code: &str) -> Result<Self, Self::Err> {
         Ok(Move {
             from: code[0..2].parse::<Position>()?,
-            pawn_promo: code[2..3].parse::<PawnPromotion>()?,
+            move_type: code[2..3].parse::<MoveType>()?,
             to: code[3..5].parse::<Position>()?,
         })
     }
@@ -48,7 +48,7 @@ impl str::FromStr for Move {
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}{}", self.from, self.pawn_promo, self.to)
+        write!(f, "{}{}{}", self.from, self.move_type, self.to)
     }
 }
 
@@ -64,7 +64,7 @@ impl Default for Move {
         Move {
             from: Position::new_unchecked(1, 2),
             to: Position::new_unchecked(6, 5),
-            pawn_promo: PawnPromotion::Yes(PromotionType::Bishop)
+            move_type: MoveType::PawnPromotion(PromotionType::Bishop)
         }
     }
 }
@@ -106,21 +106,32 @@ pub enum PromotionType {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum PawnPromotion {
-    Yes(PromotionType),
-    No,
+pub enum CastlingType {
+    KingSide,
+    QueenSide,
 }
 
-impl str::FromStr for PawnPromotion {
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum MoveType {
+    Normal,
+    PawnPromotion(PromotionType),
+    EnPassant,
+    Castling(CastlingType)
+}
+
+impl str::FromStr for MoveType {
     type Err = ChessError;
 
-    fn from_str(s: &str) -> Result<PawnPromotion, Self::Err> {
+    fn from_str(s: &str) -> Result<MoveType, Self::Err> {
         match s {
-            "-" => Ok(PawnPromotion::No),
-            "Q" => Ok(PawnPromotion::Yes(PromotionType::Queen)),
-            "R" => Ok(PawnPromotion::Yes(PromotionType::Rook)),
-            "K" => Ok(PawnPromotion::Yes(PromotionType::Knight)),
-            "B" => Ok(PawnPromotion::Yes(PromotionType::Bishop)),
+            "-" => Ok(MoveType::Normal),
+            "Q" => Ok(MoveType::PawnPromotion(PromotionType::Queen)),
+            "R" => Ok(MoveType::PawnPromotion(PromotionType::Rook)),
+            "K" => Ok(MoveType::PawnPromotion(PromotionType::Knight)),
+            "B" => Ok(MoveType::PawnPromotion(PromotionType::Bishop)),
+            "e" => Ok(MoveType::EnPassant),
+            "c" => Ok(MoveType::Castling(CastlingType::KingSide)),
+            "C" => Ok(MoveType::Castling(CastlingType::QueenSide)),
             _ => Err(ChessError{
                 msg: format!("unknown pawn promotion type: {}. Only QRKB are allowed.", s),
                 kind: ErrorKind::IllegalFormat
@@ -129,14 +140,17 @@ impl str::FromStr for PawnPromotion {
     }
 }
 
-impl fmt::Display for PawnPromotion {
+impl fmt::Display for MoveType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let code = match self {
-            PawnPromotion::No => "-",
-            PawnPromotion::Yes(PromotionType::Queen) => "Q",
-            PawnPromotion::Yes(PromotionType::Rook) => "R",
-            PawnPromotion::Yes(PromotionType::Knight) => "K",
-            PawnPromotion::Yes(PromotionType::Bishop) => "B",
+            MoveType::Normal => "-",
+            MoveType::PawnPromotion(PromotionType::Queen) => "Q",
+            MoveType::PawnPromotion(PromotionType::Rook) => "R",
+            MoveType::PawnPromotion(PromotionType::Knight) => "K",
+            MoveType::PawnPromotion(PromotionType::Bishop) => "B",
+            MoveType::EnPassant => "e",
+            MoveType::Castling(CastlingType::KingSide) => "c",
+            MoveType::Castling(CastlingType::QueenSide) => "C",
         };
         write!(f, "{}", code)
     }

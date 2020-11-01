@@ -1,4 +1,4 @@
-use crate::base::{Color, Position, Move, PawnPromotion, Moves, ChessError, ErrorKind, Direction, Deactivatable};
+use crate::base::{Color, Position, Move, MoveType, Moves, ChessError, ErrorKind, Direction, Deactivatable};
 use crate::figure::{Figure, FigureType, FigureAndPosition};
 use crate::game::{Board};
 use crate::figure::functions::check_search::is_king_in_check;
@@ -597,13 +597,13 @@ fn do_castling_move(
     do_normal_move(new_board, Move {
         from: next_move.from,
         to: king_to,
-        pawn_promo: PawnPromotion::No,
+        move_type: MoveType::Normal,
     });
     // move the rook
     do_normal_move(new_board, Move {
         from: next_move.to,
         to: rook_to,
-        pawn_promo: PawnPromotion::No,
+        move_type: MoveType::Normal,
     });
 
     king_to

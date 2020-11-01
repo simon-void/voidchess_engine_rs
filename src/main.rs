@@ -18,7 +18,7 @@ fn main() {
     // use std::mem;
     // println!("size of pos: {}", mem::size_of::<Position>())
 
-    let game_config = "";
+    // let game_config = "";
     // let game_config = "d2-d3";
     // let game_config = "d2-d3 d7-d6";
     // let game_config = "e2-e3";

@@ -1,6 +1,6 @@
 use crate::figure::{FigureType};
 use crate::game::{Board, FieldContent, GameState};
-use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, PawnPromotion, PromotionType, Moves, Position, Move};
+use crate::base::{Color, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, ALL_DIRECTIONS, Direction, MoveType, PromotionType, Moves, Position, Move, CastlingType};
 use crate::figure::functions::castling::{is_king_side_castling_allowed, is_queen_side_castling_allowed};
 
 pub fn for_reachable_moves(
@@ -86,7 +86,11 @@ fn for_reachable_pawn_moves(
             FieldContent::Empty => {
                 if let Some(en_passant_intercept_pos) = opt_en_passant_intercept_pos {
                     if en_passant_intercept_pos==diagonal_forward_pos {
-                        move_collector.push(Move::new(pawn_pos, diagonal_forward_pos));
+                        move_collector.push(Move{
+                            from: pawn_pos,
+                            to: diagonal_forward_pos,
+                            move_type: MoveType::EnPassant
+                        });
                     }
                 }
             }
@@ -101,20 +105,20 @@ fn for_reachable_pawn_moves(
     ) {
         if pawn_pos_to.row==0 || pawn_pos_to.row==7 {
             [
-                PawnPromotion::Yes(PromotionType::Queen),
-                PawnPromotion::Yes(PromotionType::Knight),
+                MoveType::PawnPromotion(PromotionType::Queen),
+                MoveType::PawnPromotion(PromotionType::Knight),
             ].iter().for_each(|pawn_promo|{
                 move_collector.push(Move{
                     from: pawn_pos_from,
                     to: pawn_pos_to,
-                    pawn_promo: *pawn_promo
+                    move_type: *pawn_promo
                 });
             });
         } else {
             move_collector.push(Move{
                 from: pawn_pos_from,
                 to: pawn_pos_to,
-                pawn_promo: PawnPromotion::No
+                move_type: MoveType::Normal
             });
         };
     }
@@ -211,12 +215,20 @@ fn for_reachable_king_moves(
     });
     if is_queen_side_castling_still_possible {
         if let Some(rook_pos) = is_queen_side_castling_allowed(color, king_pos, board) {
-            move_collector.push(Move::new(king_pos, rook_pos))
+            move_collector.push(Move{
+                from: king_pos,
+                to: rook_pos,
+                move_type: MoveType::Castling(CastlingType::QueenSide)
+            })
         }
     }
     if is_king_side_castling_still_possible {
         if let Some(rook_pos) = is_king_side_castling_allowed(color, king_pos, board) {
-            move_collector.push(Move::new(king_pos, rook_pos))
+            move_collector.push(Move{
+                from: king_pos,
+                to: rook_pos,
+                move_type: MoveType::Castling(CastlingType::KingSide)
+            })
         }
     }
 }

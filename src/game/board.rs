@@ -308,7 +308,6 @@ pub enum FieldContent {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::*;
     use crate::game::{GameState};
 
