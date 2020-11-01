@@ -19,6 +19,13 @@ impl Color {
             Color::Black => Color::White,
         }
     }
+
+    pub fn get_fen_char(&self) -> char {
+        match self {
+            Color::Black => {'b'}
+            Color::White => {'w'}
+        }
+    }
 }
 
 impl fmt::Display for Color {

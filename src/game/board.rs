@@ -247,6 +247,36 @@ impl Board {
             encode_figure_slice(&self.state[48..64]),
         ])
     }
+
+    pub fn get_fen_part1(&self) -> String {
+        let mut fen_part1 = String::with_capacity(72);
+        let mut index_range_end: usize = 64;
+        loop {
+            let mut fields_without_figure: usize = 0;
+            for pos_index in index_range_end-8..index_range_end {
+                match self.state[pos_index] {
+                    None => {fields_without_figure+=1;}
+                    Some(figure) => {
+                        if fields_without_figure != 0 {
+                            fen_part1.push_str(fields_without_figure.to_string().as_str());
+                            fields_without_figure = 0;
+                        }
+                        fen_part1.push(figure.get_fen_char());
+                    }
+                }
+            }
+            if fields_without_figure != 0 {
+                fen_part1.push_str(fields_without_figure.to_string().as_str());
+            }
+            if index_range_end == 8 {
+                break;
+            } else {
+                fen_part1.push('/');
+                index_range_end -= 8;
+            }
+        }
+        fen_part1
+    }
 }
 
 impl Display for Board {
@@ -272,4 +302,31 @@ pub const USIZE_RANGE_063: Range<usize> = 0..64;
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FieldContent {
     Empty, OwnFigure, OpponentFigure,
+}
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+    use crate::game::{GameState};
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+
+    #[rstest(
+    game_config, expected_fen_part1,
+    case("", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"),
+    case("e2-e4", "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR"),
+    case("b1-a3 g8-h6 e2-e4", "rnbqkb1r/pppppppp/7n/8/4P3/N7/PPPP1PPP/R1BQKBNR"),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_get_fen_part1(
+        game_config: &str,
+        expected_fen_part1: &str,
+    ) {
+        let game_state = game_config.parse::<GameState>().unwrap();
+        let actual_fen_part1 = game_state.board.get_fen_part1();
+        assert_eq!(actual_fen_part1, String::from(expected_fen_part1));
+    }
 }

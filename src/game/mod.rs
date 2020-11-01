@@ -13,6 +13,7 @@ pub struct Game {
     latest_state: GameState,
     reachable_moves: Moves,
     board_states: BoardStates,
+    half_moves_played: usize,
 }
 
 impl Game {
@@ -33,6 +34,7 @@ impl Game {
             latest_state: game_state,
             reachable_moves,
             board_states: BoardStates::new(board_state, turn_by),
+            half_moves_played: 0,
         }
     }
 
@@ -68,6 +70,7 @@ impl Game {
             latest_state: new_game_state,
             reachable_moves,
             board_states: new_board_states,
+            half_moves_played: self.half_moves_played + 1,
         };
         let move_result = MoveResult::Ongoing(new_game, move_stats);
         move_result
@@ -87,6 +90,15 @@ impl Game {
 
     pub fn is_active_king_in_check(&self) -> bool {
         self.latest_state.is_active_king_in_check()
+    }
+
+    pub fn get_fen(&self) -> String {
+        let mut fen = self.latest_state.get_fen_part1to4();
+        fen.push(' ');
+        fen.push_str((self.board_states.count_half_moves_without_progress()).to_string().as_str());
+        fen.push(' ');
+        fen.push_str(((self.half_moves_played / 2) + 1).to_string().as_str());
+        fen
     }
 }
 
@@ -250,5 +262,28 @@ mod tests {
                 panic!("expected HighLevelErr but got game");
             }
         };
+    }
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+
+    #[rstest(
+    game_config, expected_fen,
+    case("", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
+    case("e2-e4", "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"),
+    case("e2-e4 e7-e5", "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2"),
+    case("b1-a3 g8-h6 g1-h3", "rnbqkb1r/pppppppp/7n/8/8/N6N/PPPPPPPP/R1BQKB1R b KQkq - 3 2"),
+    case("b1-a3 g8-h6 a1-b1", "rnbqkb1r/pppppppp/7n/8/8/N7/PPPPPPPP/1RBQKBNR b Kkq - 3 2"),
+    case("b1-a3 g8-h6 a1-b1 h8-g8", "rnbqkbr1/pppppppp/7n/8/8/N7/PPPPPPPP/1RBQKBNR w Kq - 4 3"),
+    case("white ♔d1 ♖h1 ♚e8", "4k3/8/8/8/8/8/8/3K3R w - - 0 1"),
+    case("black ♖a1 ♔e1 ♖h1 ♜a8 ♚e8 ♜h8", "r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1"),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_get_fen(
+        game_config: &str,
+        expected_fen: &str,
+    ) {
+        let game = game_config.parse::<Game>().unwrap();
+        let actual_fen = game.get_fen();
+        assert_eq!(actual_fen, String::from(expected_fen));
     }
 }

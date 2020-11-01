@@ -173,4 +173,8 @@ impl BoardStates {
             })
         }
     }
+
+    pub fn count_half_moves_without_progress(&self) -> usize {
+        self.white_board_states_history.len() + self.black_board_states_history.len() - 1
+    }
 }

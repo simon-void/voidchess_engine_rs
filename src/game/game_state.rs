@@ -168,10 +168,10 @@ impl GameState {
             WHITE_KING_SIDE_ROOK_STARTING_POS, Color::White, &board,
         );
         let is_black_queen_side_rook_on_starting_pos = board_contains_rook_at(
-            BLACK_QUEEN_SIDE_ROOK_STARTING_POS, Color::White, &board,
+            BLACK_QUEEN_SIDE_ROOK_STARTING_POS, Color::Black, &board,
         );
         let is_black_king_side_rook_on_starting_pos = board_contains_rook_at(
-            BLACK_KING_SIDE_ROOK_STARTING_POS, Color::White, &board,
+            BLACK_KING_SIDE_ROOK_STARTING_POS, Color::Black, &board,
         );
         let is_white_queen_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_queen_side_rook_on_starting_pos);
         let is_white_king_side_castling_possible = Deactivatable::new(is_white_king_on_starting_pos && is_white_king_side_rook_on_starting_pos);
@@ -467,6 +467,30 @@ impl GameState {
             Color::Black => self.black_king_pos,
         };
         is_king_in_check(king_pos, self.turn_by, &self.board)
+    }
+
+    pub fn get_fen_part1to4(&self) -> String {
+        let mut fen_part1to4 = self.board.get_fen_part1();
+        fen_part1to4.push(' ');
+        fen_part1to4.push(self.turn_by.get_fen_char());
+        fen_part1to4.push(' ');
+        let white_king_castling = self.is_white_king_side_castling_still_possible.get_value();
+        let white_queen_castling = self.is_white_queen_side_castling_still_possible.get_value();
+        let black_king_castling = self.is_black_king_side_castling_still_possible.get_value();
+        let black_queen_castling = self.is_black_queen_side_castling_still_possible.get_value();
+        if white_king_castling { fen_part1to4.push('K'); }
+        if white_queen_castling { fen_part1to4.push('Q'); }
+        if black_king_castling { fen_part1to4.push('k'); }
+        if black_queen_castling { fen_part1to4.push('q'); }
+        if !(white_king_castling || white_queen_castling || black_king_castling || black_queen_castling) {
+            fen_part1to4.push('-');
+        }
+        fen_part1to4.push(' ');
+        match self.en_passant_intercept_pos {
+            None => { fen_part1to4.push('-');}
+            Some(pos) => { fen_part1to4.push_str(format!("{}", pos).as_str());}
+        }
+        fen_part1to4
     }
 }
 

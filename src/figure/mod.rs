@@ -15,6 +15,17 @@ impl Figure {
     pub fn for_reachable_moves(&self, pos: Position, match_state: &GameState, move_collector: &mut Moves) {
         functions::reachable::for_reachable_moves(self.fig_type, pos, match_state, move_collector)
     }
+
+    pub fn get_fen_char(&self) -> char {
+        match self.fig_type {
+            FigureType::Pawn => {if self.color == Color::White {'P'} else {'p'}}
+            FigureType::Rook => {if self.color == Color::White {'R'} else {'r'}}
+            FigureType::Knight => {if self.color == Color::White {'N'} else {'n'}}
+            FigureType::Bishop => {if self.color == Color::White {'B'} else {'b'}}
+            FigureType::Queen => {if self.color == Color::White {'Q'} else {'q'}}
+            FigureType::King => {if self.color == Color::White {'K'} else {'k'}}
+        }
+    }
 }
 
 impl str::FromStr for Figure {
