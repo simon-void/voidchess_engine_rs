@@ -158,6 +158,7 @@ function BoardModel(gameModel) {
 
 function GameModel() {
     let self = this;
+    self.evaluation = ko.observable("waiting for your move");
     self.state = ko.observable(states.LOADING)
     self.allowedMoves = ko.observable(_allowedMovesAtWhiteStartClassic);
     self.moveStrPlayed = ko.observableArray([]);
@@ -177,7 +178,7 @@ function GameModel() {
                     }
                     if (gameEval.type == gameEvalTypes.MOVE_TO_PLAY) {
                         self.moveStrPlayed.push(gameEval.move);
-                        log("evaluation: " + gameEval.eval);
+                        self.evaluation(gameEval.eval);
                         let fen = gameEval.fen;
                         self.boardModel.board.setPosition(fen);
 
