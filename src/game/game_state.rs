@@ -265,19 +265,12 @@ impl GameState {
             move_stats,
         ) = match moving_figure.fig_type {
             FigureType::King => {
-                let is_castling = if let Some(figure_to_be_caught) = self.board.get_figure(next_move.to) {
-                    figure_to_be_caught.color == self.turn_by
-                } else {
-                    false
-                };
-                let new_king_pos: Position;
-                let figure_gets_caught = if is_castling {
-                    new_king_pos = do_castling_move(&mut new_board, next_move);
-                    false
-                } else {
-                    new_king_pos = next_move.to;
-                    do_normal_move(&mut new_board, next_move)
-                };
+                let figure_gets_caught = do_normal_move(&mut new_board, next_move);
+                let new_king_pos = next_move.to;
+                let is_castling = (next_move.from.column-next_move.to.column).abs() == 2;
+                if is_castling {
+                    update_rock_position_after_castling(&mut new_board, next_move);
+                }
 
                 let king_move_stats = MoveStats {
                     did_catch_figure: figure_gets_caught,
@@ -319,10 +312,19 @@ impl GameState {
                     }
                     PawnMoveType::SingleStep
                 }
+                fn handle_pawn_promotion_after_move(new_board: &mut Board, pawn_move: Move, pawn_color: Color) {
+                    if let MoveType::PawnPromotion(promo_type) = pawn_move.move_type {
+                        new_board.set_figure(
+                            pawn_move.to,
+                            Figure{ fig_type: promo_type.get_figure_type(), color: pawn_color }
+                        );
+                    }
+                }
 
                 match compute_pawn_move_type(self, next_move) {
                     PawnMoveType::SingleStep => {
                         let figure_gets_caught = do_normal_move(&mut new_board, next_move);
+                        handle_pawn_promotion_after_move(&mut new_board, next_move, self.turn_by);
                         (
                             self.white_king_pos, self.black_king_pos,
                             None,
@@ -574,39 +576,19 @@ fn do_normal_move(
     new_board.set_figure(next_move.to, moving_figure)
 }
 
-/**
-* returns - the new position of the king
-*/
-fn do_castling_move(
+fn update_rock_position_after_castling(
     new_board: &mut Board,
     next_move: Move,
-) -> Position {
-    let is_king_side_castling = next_move.to.column > next_move.from.column;
-    let castling_row = next_move.from.row;
-    let king_to: Position;
-    let rook_to: Position;
-    if is_king_side_castling {
-        king_to = Position::new_unchecked(6, castling_row);
-        rook_to = Position::new_unchecked(5, castling_row)
+) {
+    let castling_row = next_move.to.row;
+    let (rook_from, rook_to) = if next_move.to.column == 6 {
+        (Position::new_unchecked(7, castling_row), Position::new_unchecked(5, castling_row))
     } else {
-        king_to = Position::new_unchecked(2, castling_row);
-        rook_to = Position::new_unchecked(3, castling_row)
-    }
-    // move the king
-    // (this simplified approach only works in classical chess, not in all chess960 positions)
-    do_normal_move(new_board, Move {
-        from: next_move.from,
-        to: king_to,
-        move_type: MoveType::Normal,
-    });
-    // move the rook
-    do_normal_move(new_board, Move {
-        from: next_move.to,
-        to: rook_to,
-        move_type: MoveType::Normal,
-    });
-
-    king_to
+        (Position::new_unchecked(0, castling_row), Position::new_unchecked(3, castling_row))
+    };
+    new_board.clear_field(rook_from);
+    let rook_color = if castling_row == 0 {Color::White} else {Color::Black};
+    new_board.set_figure(rook_to, Figure{ fig_type: FigureType::Rook, color: rook_color });
 }
 
 fn do_en_passant_move(
@@ -650,6 +632,7 @@ mod tests {
     use super::*;
     use rstest::*;
     use crate::game::{GameState};
+    use crate::base::PromotionType;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 
@@ -685,7 +668,7 @@ mod tests {
     #[rstest(
     game_config_testing, next_move_str, expected_catches_figure,
     case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "e1-d1", false),
-    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "e1-h1", false),
+    case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "e1-g1", false),
     case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "a2-a3", false),
     case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "a2-a4", false),
     case("white ♔e1 ♖h1 ♙a2 ♜h2 ♚e8", "h1-h2", true),
@@ -762,5 +745,58 @@ mod tests {
     ) {
         let game_state = game_state_config.parse::<GameState>().unwrap();
         assert_eq!(game_state.turn_by, expected_color);
+    }
+
+    #[rstest(
+    game_state_config, promoting_move_str,
+    case("white ♔b6 ♙a7 ♚h6", "a7Qa8"),
+    case("white ♔b6 ♙a7 ♚h6", "a7Ra8"),
+    case("white ♔b6 ♙a7 ♚h6", "a7Ka8"),
+    case("white ♔b6 ♙a7 ♚h6", "a7Ba8"),
+    case("white ♔b6 ♙a7 ♞b8 ♚h6", "a7Qb8"),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_pawn_promo_works(
+        game_state_config: &str,
+        promoting_move_str: &str,
+    ) {
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        let promoting_move = promoting_move_str.parse::<Move>().unwrap();
+        let expected_color_of_promoted_figure = game_state.turn_by;
+        let expected_promo_figure_type = if let MoveType::PawnPromotion(promo_type) = promoting_move.move_type {
+            promo_type.get_figure_type()
+        } else {
+            panic!("expected move that includes a pawn promotion, but got {}", promoting_move_str)
+        };
+        let (new_game_state, _) = game_state.do_move(promoting_move);
+        let promoted_figure = new_game_state.board.get_figure(promoting_move.to);
+        if let Some(figure) = promoted_figure {
+            println!("{}", new_game_state.get_fen_part1to4());
+            assert_eq!(figure.color, expected_color_of_promoted_figure);
+            assert_eq!(figure.fig_type, expected_promo_figure_type);
+        } else {
+            panic!("expected a figure on promotion square")
+        }
+    }
+
+    #[rstest(
+    game_state_config, castling_move_str, expected_updated_board_fen,
+    case("white ♖a1 ♔e1 ♖h1 ♜a8 ♚e8 ♜h8", "e1Cc1", "r3k2r/8/8/8/8/8/8/2KR3R"),
+    case("white ♖a1 ♔e1 ♖h1 ♜a8 ♚e8 ♜h8", "e1cg1", "r3k2r/8/8/8/8/8/8/R4RK1"),
+    case("black ♖a1 ♔e1 ♖h1 ♜a8 ♚e8 ♜h8", "e8Cc8", "2kr3r/8/8/8/8/8/8/R3K2R"),
+    case("black ♖a1 ♔e1 ♖h1 ♜a8 ♚e8 ♜h8", "e8cg8", "r4rk1/8/8/8/8/8/8/R3K2R"),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_castling_works(
+        game_state_config: &str,
+        castling_move_str: &str,
+        expected_updated_board_fen: &str,
+    ) {
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        let castling_move = castling_move_str.parse::<Move>().unwrap();
+
+        let (new_game_state, _) = game_state.do_move(castling_move);
+        let actual_updated_board_fen = new_game_state.board.get_fen_part1();
+        assert_eq!(actual_updated_board_fen, expected_updated_board_fen);
     }
 }

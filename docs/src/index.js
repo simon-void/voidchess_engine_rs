@@ -20,11 +20,9 @@ async function init_wasm() {
     await init();
 }
 
-async function display_greeting(name) {
-    console.log("invoking wasm");
-    let greeting = await wasm.get_concatenated_allowed_moves("");
-    console.log("received from wasm: " + greeting);
-    log(greeting);
+async function getFenResult(arrayOfMoveStr) {
+    let fen = await wasm.get_fen(arrayOfMoveStr.join(' '));
+    return JSON.parse(fen);
 }
 
 async function getAllowedMovesAsMap(arrayOfMoveStr) {
@@ -87,9 +85,9 @@ function arrayOfMovesToMoveMap(arrayOfMoveStr) {
 const output = document.getElementById("output")
 
 function log(text) {
-    const log = document.createElement("div")
-    log.innerText = text
-    output.appendChild(log)
+    const log = document.createElement("div");
+    log.innerText = text;
+    output.prepend(log);
 }
 
 const _allowedMovesAtWhiteStartClassic = arrayOfMovesToMoveMap(
@@ -131,7 +129,20 @@ function BoardModel(gameModel) {
         }
     });
     self.takeCareOfSpecialMoves = function (move) {
-        //TODO
+        if(move.type!==moveTypes.NORMAL) {
+            let moves_plus_ongoing_move = [...gameModel.moveStrPlayed(), move.asStr];
+            getFenResult(moves_plus_ongoing_move).then(fenResult => {
+                    if (fenResult.isOk) {
+                        let fen = fenResult.value;
+                        self.board.setPosition(fen);
+                    } else {
+                        log(fenResult.value);
+                    }
+                }, reason => {
+                    log(`error when invoking getFenResult: ${reason}`);
+                }
+            )
+        }
     }
 }
 
@@ -149,6 +160,9 @@ function GameModel() {
         self.allowedMoves(new Map());
         getAllowedMovesAsMap(self.moveStrPlayed()).then(
             newAllowedMoves => {
+                if (newAllowedMoves.size == 0) {
+                    log("no moves left")
+                }
                 self.allowedMoves(newAllowedMoves);
             }, reason => {
                 alert(`couldn't compute allowed moves because of ${reason}`)

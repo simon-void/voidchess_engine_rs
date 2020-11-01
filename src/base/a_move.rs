@@ -4,6 +4,7 @@ use crate::base::position::Position;
 use tinyvec::TinyVec;
 use crate::base::{ChessError, ErrorKind};
 use tinyvec::alloc::fmt::Formatter;
+use crate::figure::FigureType;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Move {
@@ -103,6 +104,17 @@ pub enum PromotionType {
     Knight,
     Bishop,
     Queen,
+}
+
+impl PromotionType {
+    pub fn get_figure_type(&self) -> FigureType {
+        match self {
+            PromotionType::Rook => {FigureType::Rook}
+            PromotionType::Knight => {FigureType::Knight}
+            PromotionType::Bishop => {FigureType::Bishop}
+            PromotionType::Queen => {FigureType::Queen}
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
