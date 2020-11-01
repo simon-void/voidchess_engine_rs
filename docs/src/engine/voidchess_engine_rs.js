@@ -133,6 +133,17 @@ export function get_fen(game_config) {
     return takeObject(ret);
 }
 
+/**
+* @param {string} game_config
+* @returns {any}
+*/
+export function evaluate_position_after(game_config) {
+    var ptr0 = passStringToWasm0(game_config, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    var ret = wasm.evaluate_position_after(ptr0, len0);
+    return takeObject(ret);
+}
+
 async function load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
 

@@ -14,6 +14,11 @@ const moveTypes = {
     SHORT_CASTLING: "short_castling",
     LONG_CASTLING: "long_castling",
 };
+const gameEvalTypes = {
+    GAME_ENDED: "GameEnded",
+    MOVE_TO_PLAY: "MoveToPlay",
+    ERROR: "Err",
+};
 
 async function init_wasm() {
     console.log("init wasm");
@@ -29,6 +34,11 @@ async function getAllowedMovesAsMap(arrayOfMoveStr) {
     let movesJson = await wasm.get_concatenated_allowed_moves(arrayOfMoveStr.join(' '));
     let moveArray = JSON.parse(movesJson);
     return arrayOfMovesToMoveMap(moveArray);
+}
+
+async function evaluatePositionAfter(arrayOfMoveStr) {
+    let gameEvaluation = await wasm.evaluate_position_after(arrayOfMoveStr.join(' '));
+    return JSON.parse(gameEvaluation);
 }
 
 function arrayOfMovesToMoveMap(arrayOfMoveStr) {
@@ -158,16 +168,37 @@ function GameModel() {
     self.informOfMove = function (move) {
         self.moveStrPlayed.push(move.asStr);
         self.allowedMoves(new Map());
-        getAllowedMovesAsMap(self.moveStrPlayed()).then(
-            newAllowedMoves => {
-                if (newAllowedMoves.size == 0) {
-                    log("no moves left")
+        self.state(states.ENGINE_TURN);
+        setTimeout(() => {
+            evaluatePositionAfter([...self.moveStrPlayed()]).then(
+                gameEval => {
+                    if (gameEval.msg) {
+                        log(gameEval.msg);
+                    }
+                    if (gameEval.type == gameEvalTypes.MOVE_TO_PLAY) {
+                        self.moveStrPlayed.push(gameEval.move);
+                        log("evaluation: " + gameEval.eval);
+                        let fen = gameEval.fen;
+                        self.boardModel.board.setPosition(fen);
+
+                        getAllowedMovesAsMap(self.moveStrPlayed()).then(
+                            newAllowedMoves => {
+                                if (newAllowedMoves.size == 0) {
+                                    log("no moves left")
+                                }
+                                self.allowedMoves(newAllowedMoves);
+                            }, reason => {
+                                alert(`couldn't compute allowed moves because of ${reason}`)
+                            }
+                        )
+
+                        self.state(states.HUMAN_TURN);
+                    }
+                }, reason => {
+                    alert(`couldn't compute allowed moves because of ${reason}`)
                 }
-                self.allowedMoves(newAllowedMoves);
-            }, reason => {
-                alert(`couldn't compute allowed moves because of ${reason}`)
-            }
-        )
+            )
+        }, 310);
     };
 }
 
