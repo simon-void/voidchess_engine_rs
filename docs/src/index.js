@@ -27,8 +27,8 @@ async function display_greeting(name) {
     log(greeting);
 }
 
-async function getAllowedMovesAsMap(movesSoFar) {
-    let movesJson = await wasm.get_concatenated_allowed_moves("");
+async function getAllowedMovesAsMap(arrayOfMoveStr) {
+    let movesJson = await wasm.get_concatenated_allowed_moves(arrayOfMoveStr.join(' '));
     let moveArray = JSON.parse(movesJson);
     return arrayOfMovesToMoveMap(moveArray);
 }
@@ -101,12 +101,12 @@ function BoardModel(gameModel) {
     self.board = new Chessboard(
         document.getElementById("board"),
         {
-            position: "empty",
+            position: "start",
             moveInputMode: MOVE_INPUT_MODE.dragPiece,
             sprite: {url: "./assets/images/chessboard-sprite.svg"},
             style: {
-                cssClass: "default",
-                showCoordinates: false, // show ranks and files
+                // cssClass: "default",
+                showCoordinates: true, // show ranks and files
                 showBorder: true, // display a border around the board
             }
         }
@@ -115,66 +115,51 @@ function BoardModel(gameModel) {
         switch (event.type) {
             case INPUT_EVENT_TYPE.moveStart:
                 let start_accepted = gameModel.allowedMoves().has(event.square);
-                log(`moveStart: ${event.square}, accepted: ${start_accepted}`)
                 return start_accepted;
             case INPUT_EVENT_TYPE.moveDone:
                 let moveOrNull = gameModel.allowedMoves().get(event.squareFrom).find(move=>move.to===event.squareTo);
                 let move_accepted = moveOrNull != null;
-                log(`moveDone: ${event.squareFrom}-${event.squareTo}, accepted: ${move_accepted}`)
                 if(move_accepted) {
-                    gameModel.informOfMove(moveOrNull)
+                    setTimeout(()=>{
+                        self.takeCareOfSpecialMoves(moveOrNull);
+                        gameModel.informOfMove(moveOrNull)
+                    },0);
                 }
                 return move_accepted;
             case INPUT_EVENT_TYPE.moveCanceled:
-                log(`moveCanceled`)
+                //log(`moveCanceled`)
         }
     });
+    self.takeCareOfSpecialMoves = function (move) {
+        //TODO
+    }
 }
 
 function GameModel() {
     let self = this;
     self.state = ko.observable(states.LOADING)
     self.allowedMoves = ko.observable(_allowedMovesAtWhiteStartClassic);
-    self.movesPlayed = ko.observableArray([]);
+    self.moveStrPlayed = ko.observableArray([]);
     // this.fullName = ko.computed(function() {
     //     return this.firstName() + " " + this.lastName();
     // }, this);
-    self.board = new Chessboard(
-        document.getElementById("board"),
-        {
-            position: "start",
-            moveInputMode: MOVE_INPUT_MODE.dragPiece,
-            sprite: {url: "./assets/images/chessboard-sprite.svg"}
-        }
-    );
-    self.board.enableMoveInput(event => {
-        switch (event.type) {
-            case INPUT_EVENT_TYPE.moveStart:
-                let start_accepted = self.allowedMoves().has(event.square);
-                log(`moveStart: ${event.square}, accepted: ${start_accepted}`)
-                return start_accepted;
-            case INPUT_EVENT_TYPE.moveDone:
-                let moveOrNull = self.allowedMoves().get(event.squareFrom).find(move=>move.to===event.squareTo);
-                let move_accepted = moveOrNull != null && moveOrNull !=undefined;
-                log(`moveDone: ${event.squareFrom}-${event.squareTo}, accepted: ${move_accepted}`)
-                return move_accepted;
-            case INPUT_EVENT_TYPE.moveCanceled:
-                log(`moveCanceled`)
-        }
-    });
+    self.boardModel = new BoardModel(self);
     self.informOfMove = function (move) {
-        self.movesPlayed.push(move.asStr);
+        self.moveStrPlayed.push(move.asStr);
+        self.allowedMoves(new Map());
+        getAllowedMovesAsMap(self.moveStrPlayed()).then(
+            newAllowedMoves => {
+                self.allowedMoves(newAllowedMoves);
+            }, reason => {
+                alert(`couldn't compute allowed moves because of ${reason}`)
+            }
+        )
     };
 }
 
 window.onload = function () {
     let gameModel = new GameModel();
     ko.applyBindings(gameModel);
-
-    let greeting_button = document.getElementById('greeting_button');
-    greeting_button.addEventListener("click", () => {
-        display_greeting("Success!");
-    }, false);
 
     init_wasm().then(_ => {
         gameModel.state(states.HUMAN_TURN);
