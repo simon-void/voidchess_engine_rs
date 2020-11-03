@@ -6,6 +6,7 @@ const states = {
     LOADING: "loading",
     HUMAN_TURN: "human_turn",
     ENGINE_TURN: "engine_turn",
+    GAME_ENDED: "game ended",
 };
 const moveTypes = {
     NORMAL: "normal",
@@ -173,8 +174,12 @@ function GameModel() {
         setTimeout(() => {
             evaluatePositionAfter([...self.moveStrPlayed()]).then(
                 gameEval => {
-                    if (gameEval.msg) {
+                    if (gameEval.type == gameEvalTypes.ERROR) {
                         log(gameEval.msg);
+                    }
+                    if (gameEval.type == gameEvalTypes.GAME_ENDED) {
+                        self.evaluation(gameEval.msg);
+                        self.state(states.GAME_ENDED);
                     }
                     if (gameEval.type == gameEvalTypes.MOVE_TO_PLAY) {
                         self.moveStrPlayed.push(gameEval.move);
