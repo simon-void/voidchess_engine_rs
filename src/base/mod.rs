@@ -1,10 +1,12 @@
 mod a_move;
+pub(crate) mod direction;
 mod errors;
 mod position;
 
 pub use a_move::*;
 pub use errors::*;
 pub use position::*;
+pub use direction::*;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

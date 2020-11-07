@@ -1,6 +1,7 @@
-use crate::base::{Position, Color, Direction};
+use crate::base::{Position, Color, Direction, MoveType, Move, CastlingType};
 use crate::game::Board;
 use crate::figure::FigureType;
+use std::cmp::max;
 
 pub fn is_king_in_check(king_pos: Position, color: Color, board: &Board) -> bool {
     let (forward_left, forward, forward_right) = Direction::forward_directions(color);
@@ -96,6 +97,171 @@ fn get_first_opposite_color_figure_type_in_direction(
         old_pos = new_pos;
         is_attacker_next_to_self = false;
     }
+}
+
+/**
+ * it's assumed that the passive king isn't in check at this point (because then the game should already by over).
+ * this also means that the king
+ */
+pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Color, board: &Board) -> bool {
+    match latest_move.move_type {
+        MoveType::Castling(castling_type) => {
+            let castling_rook_end_pos = if castling_type == CastlingType::KingSide {
+                Position::new_unchecked(5, king_pos.row)
+            } else {
+                Position::new_unchecked(3, king_pos.row)
+            };
+            if gives_chess(castling_rook_end_pos, king_pos, color, board).is_some() {
+                return true;
+            }
+        }
+        MoveType::EnPassant => {
+            if gives_chess(latest_move.to, king_pos, color, board).is_some() ||
+                find_attack_from_behind(latest_move.from, king_pos, color, board).is_some() {
+                return true;
+            }
+            let taken_pawn_pos: Position = Position::new_unchecked(latest_move.to.column, latest_move.from.row);
+            if find_attack_from_behind(taken_pawn_pos, king_pos, color, board).is_some() {
+                return true;
+            }
+        }
+        _ => {
+            if gives_chess(latest_move.to, king_pos, color, board).is_some() ||
+                find_attack_from_behind(latest_move.from, king_pos, color, board).is_some() {
+                return true;
+            }
+        }
+    };
+    false
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Attack {
+    OnLine(Direction, usize),
+    ByPawn(Position),
+    ByKnight(Position),
+}
+
+pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color, board: &Board) -> Option<Attack> {
+    let attacker_type = board.get_figure(attacker_pos).unwrap().fig_type;
+    match king_pos.get_direction(attacker_pos) {
+        None => {
+            if attacker_type == FigureType::Knight && attacker_pos.is_reachable_by_knight(king_pos) {
+                Some(Attack::ByKnight(attacker_pos))
+            } else {
+                None
+            }
+        }
+        Some(direction) => {
+            match attacker_type {
+                FigureType::Rook => {
+                    if direction.is_straight() && board.are_intermediate_pos_free(
+                        king_pos,
+                        direction,
+                        attacker_pos,
+                    ) {
+                        Some(get_queen_or_rook_attack(king_pos, direction, attacker_pos))
+                    } else {
+                        None
+                    }
+                },
+                FigureType::Bishop => {
+                    if direction.is_diagonal() && board.are_intermediate_pos_free(
+                        king_pos,
+                        direction,
+                        attacker_pos,
+                    ) {
+                        Some(get_bishop_attack(king_pos, direction, attacker_pos))
+                    } else {
+                        None
+                    }
+                },
+                FigureType::Queen => {
+                    if board.are_intermediate_pos_free(
+                        king_pos,
+                        direction,
+                        attacker_pos,
+                    ) {
+                        Some(get_queen_or_rook_attack(king_pos, direction, attacker_pos))
+                    } else {
+                        None
+                    }
+                },
+                FigureType::Pawn => {
+                    if (attacker_pos.column-king_pos.column).abs()==1 && {
+                        let (forward_left, _, forward_right) = Direction::forward_directions(king_color);
+                        direction== forward_left ||direction== forward_right
+                    } {
+                        Some(Attack::ByPawn(attacker_pos))
+                    } else {
+                        None
+                    }
+                },
+                _ => {
+                    None
+                }
+            }
+        }
+    }
+}
+
+pub fn find_attack_from_behind(freed_up_pos: Position, king_pos: Position, king_color: Color, board: &Board) -> Option<Attack> {
+    match king_pos.get_direction(freed_up_pos) {
+        None => {return None}
+        Some(direction) => {
+            let mut pos = freed_up_pos;
+            loop {
+                if let Some(new_pos) = pos.step(direction) {
+                    pos = new_pos;
+                } else {
+                    return None;
+                }
+                if let Some(figure) = board.get_figure(pos) {
+                    return if figure.color != king_color {
+                        match figure.fig_type {
+                            FigureType::Rook => {
+                                if direction.is_straight() {
+                                    Some(get_queen_or_rook_attack(king_pos, direction, pos))
+                                } else {
+                                    None
+                                }
+                            }
+                            FigureType::Bishop => {
+                                if direction.is_diagonal() {
+                                    Some(get_bishop_attack(king_pos, direction, pos))
+                                } else {
+                                    None
+                                }
+                            }
+                            FigureType::Queen => {
+                                Some(get_queen_or_rook_attack(king_pos, direction, pos))
+                            }
+                            _ => { None }
+                        }
+                    } else {
+                        None
+                    }
+                }
+            }
+        }
+    };
+}
+
+fn get_queen_or_rook_attack(king_pos: Position, direction: Direction, attacker_pos: Position) -> Attack {
+    Attack::OnLine(
+        direction,
+        max(
+            (king_pos.row - attacker_pos.row).abs(),
+            (king_pos.row - attacker_pos.column).abs(),
+        ) as usize
+    )
+}
+
+fn get_bishop_attack(king_pos: Position, direction: Direction, attacker_pos: Position) -> Attack {
+    Attack::OnLine(
+        direction,
+        (king_pos.row - attacker_pos.row).abs() as usize
+    )
 }
 
 //------------------------------Tests------------------------

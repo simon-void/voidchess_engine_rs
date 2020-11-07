@@ -53,7 +53,11 @@ fn get_max_after(
         }
         MoveResult::Ongoing(game, move_stats) => {
             if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats) {
-                return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
+                return if game.is_active_king_checkmate() {
+                    get_lose_eval(game.get_game_state(), new_half_step + 1, evaluate_for, eval_type)
+                } else {
+                    Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for))
+                }
             }
             let moves = game.get_reachable_moves();
             let mut current_max = MIN_EVALUATION;
@@ -106,7 +110,11 @@ fn get_min_after(
         }
         MoveResult::Ongoing(game, move_stats) => {
             if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats) {
-                return Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for));
+                return if game.is_active_king_checkmate() {
+                    Evaluation::WinIn((new_half_step + 1) as u8)
+                } else {
+                    Evaluation::Numeric(static_eval(game.get_game_state(), eval_type, evaluate_for))
+                }
             }
             let moves = game.get_reachable_moves();
             let mut current_min = MAX_EVALUATION;

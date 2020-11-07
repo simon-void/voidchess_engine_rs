@@ -1,10 +1,11 @@
 use crate::base::{Color, Position, Move, MoveType, Moves, ChessError, ErrorKind, Direction, Deactivatable};
 use crate::figure::{Figure, FigureType, FigureAndPosition};
 use crate::game::{Board};
-use crate::figure::functions::check_search::is_king_in_check;
+use crate::figure::functions::check_search::{is_king_in_check, is_king_in_check_after};
 use tinyvec::*;
 use std::{fmt,str};
 use crate::figure::functions::count_reachable::count_reachable_moves;
+use crate::figure::functions::checkmate::is_active_king_checkmate;
 
 #[derive(Clone, Debug)]
 pub struct GameState {
@@ -463,12 +464,23 @@ impl GameState {
         }
     }
 
-    pub fn is_active_king_in_check(&self) -> bool {
+    pub fn is_active_king_in_check(&self, opt_latest_move: Option<Move>) -> bool {
         let king_pos = match self.turn_by {
             Color::White => self.white_king_pos,
             Color::Black => self.black_king_pos,
         };
-        is_king_in_check(king_pos, self.turn_by, &self.board)
+        match opt_latest_move {
+            None => {is_king_in_check(king_pos, self.turn_by, &self.board)}
+            Some(latest_move) => {is_king_in_check_after(latest_move, king_pos, self.turn_by, &self.board)}
+        }
+    }
+
+    pub fn is_active_king_checkmate(&self, latest_move: Move) -> bool {
+        let king_pos = match self.turn_by {
+            Color::White => self.white_king_pos,
+            Color::Black => self.black_king_pos,
+        };
+        is_active_king_checkmate(king_pos, self.turn_by, &self, latest_move)
     }
 
     pub fn get_fen_part1to4(&self) -> String {
@@ -729,8 +741,8 @@ mod tests {
         expected_is_check: bool,
     ) {
         let game_state = game_state_config.parse::<GameState>().unwrap();
-        assert_eq!(game_state.is_active_king_in_check(), expected_is_check, "provided game_state");
-        assert_eq!(game_state.toggle_colors().is_active_king_in_check(), expected_is_check, "toggled game_state");
+        assert_eq!(game_state.is_active_king_in_check(None), expected_is_check, "provided game_state");
+        assert_eq!(game_state.toggle_colors().is_active_king_in_check(None), expected_is_check, "toggled game_state");
     }
 
     #[rstest(

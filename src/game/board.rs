@@ -1,5 +1,5 @@
 use crate::figure::{Figure, FigureType};
-use crate::base::{Color, Position};
+use crate::base::{Color, Position, Direction};
 use crate::base::I8_RANGE_07;
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Range;
@@ -186,6 +186,19 @@ impl Board {
 
     pub fn is_empty(&self, pos: Position) -> bool {
         self.get_figure(pos).is_none()
+    }
+
+    pub fn are_intermediate_pos_free(&self, from_pos: Position, from2to_direction: Direction, to_pos: Position) -> bool {
+        let mut pos = from_pos;
+        loop {
+            pos = pos.step(from2to_direction).expect("sequence should terminate with to_pos");
+            if pos == to_pos {
+                return true;
+            }
+            if self.get_figure(pos).is_some() {
+                return false;
+            }
+        }
     }
 
     pub fn contains_figure(&self, pos: Position, fig_type: FigureType, color: Color) -> bool {

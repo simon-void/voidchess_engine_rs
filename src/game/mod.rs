@@ -11,6 +11,7 @@ use crate::game::board_state::{BoardStates};
 #[derive(Clone, Debug)]
 pub struct Game {
     latest_state: GameState,
+    latest_move: Option<Move>,
     reachable_moves: Moves,
     board_states: BoardStates,
     half_moves_played: usize,
@@ -32,6 +33,7 @@ impl Game {
         let turn_by = game_state.turn_by;
         Game {
             latest_state: game_state,
+            latest_move: None,
             reachable_moves,
             board_states: BoardStates::new(board_state, turn_by),
             half_moves_played: 0,
@@ -68,6 +70,7 @@ impl Game {
 
         let new_game = Game {
             latest_state: new_game_state,
+            latest_move: Some(a_move),
             reachable_moves,
             board_states: new_board_states,
             half_moves_played: self.half_moves_played + 1,
@@ -89,7 +92,11 @@ impl Game {
     }
 
     pub fn is_active_king_in_check(&self) -> bool {
-        self.latest_state.is_active_king_in_check()
+        self.latest_state.is_active_king_in_check(self.latest_move)
+    }
+
+    pub fn is_active_king_checkmate(&self) -> bool {
+        self.latest_state.is_active_king_checkmate(self.latest_move.expect("this method is not meant to be called before the first move is made"))
     }
 
     pub fn get_fen(&self) -> String {
