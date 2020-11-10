@@ -10,12 +10,27 @@ use tinyvec::ArrayVec;
  * this also means that the king
  */
 pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> bool {
-    let attack_situation = match after_move.move_type {
+    let attack_situation = get_attack_situation(king_pos, king_color, game_state, after_move);
+
+    match attack_situation {
+        AttackSituation::NoAttacker => {false}
+        AttackSituation::OneAttacker(attack) => {is_active_king_checkmate_from_attack(attack, king_pos, king_color, game_state)}
+        AttackSituation::TwoAttacker => {can_king_move_without_being_in_check(king_pos, king_color, &game_state.board)}
+    }
+}
+
+fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> AttackSituation {
+    match after_move.move_type {
         MoveType::Castling(castling_type) => {
-            let castling_rook_end_pos = if castling_type==CastlingType::KingSide {
-                Position::new_unchecked(5, king_pos.row)
+            let rock_row = if game_state.turn_by==Color::White {
+                7
             } else {
-                Position::new_unchecked(3, king_pos.row)
+                0
+            };
+            let castling_rook_end_pos = if castling_type == CastlingType::KingSide {
+                Position::new_unchecked(5, rock_row)
+            } else {
+                Position::new_unchecked(3, rock_row)
             };
             if let Some(attack) = gives_chess(castling_rook_end_pos, king_pos, king_color, &game_state.board) {
                 AttackSituation::OneAttacker(attack)
@@ -42,13 +57,6 @@ pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_stat
             let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from, king_pos, king_color, &game_state.board);
             AttackSituation::from_two_possibilities(is_check_from_end_pos, is_check_from_behind_start_pos)
         }
-    };
-
-
-    match attack_situation {
-        AttackSituation::NoAttacker => {false}
-        AttackSituation::OneAttacker(attack) => {is_active_king_checkmate_from_attack(attack, king_pos, king_color, game_state)}
-        AttackSituation::TwoAttacker => {can_king_move_without_being_in_check(king_pos, king_color, &game_state.board)}
     }
 }
 
@@ -161,7 +169,7 @@ fn can_king_move_without_being_in_check(king_pos: Position, king_color: Color, b
     false
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 enum AttackSituation {
     NoAttacker,
     OneAttacker(Attack),
@@ -331,30 +339,65 @@ mod tests {
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
     #[rstest(
-    color, game_state_config, king_pos_config, expected_is_check,
-    case(Color::Black, "black ♔b6 ♙a7 ♚a8", "a8", false),
-    case(Color::White, "white ♔h8 ♚f8 ♜e7 ♟e6 ♟d7", "h8", false),
-    case(Color::White, "white ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", "g3", false),
-    case(Color::Black, "black ♔g3 ♖d1 ♚g1 ♙c2 ♙d3", "g1", true),
-    case(Color::Black, "black ♔g3 ♘e2 ♚g1 ♙c2 ♙d3", "g1", true),
-    case(Color::Black, "black ♔g3 ♗e3 ♚g1 ♙c2 ♙d3", "g1", true),
-    case(Color::Black, "black ♔a1 ♚e4 ♙d3", "e4", true),
-    case(Color::Black, "black ♔a1 ♚c4 ♙d3", "c4", true),
-    case(Color::Black, "black ♔a1 ♚e2 ♙d3", "e2", false),
-    case(Color::Black, "black ♔a1 ♚c2 ♙d3", "c2", false),
+    game_state_config, move_config, expected_is_mate,
+    case("e2-e4 e7-e5 f1-c4 d7-d6 d1-f3 c7-c5", "f3-f7", true),
+    case("e2-e4 f7-f5 e4-f5 g7-g5", "d1-h5", true),
+    case("e2-e4 f7-f5", "d1-h5", false),
+    case("white ♔e1 ♖a7 ♖b7 ♚e8", "a7-a8", true),
+    case("black ♔f1 ♖e1 ♖g1 ♙e2 ♙g2 ♚e8 ♜h8", "e8cg8", true),
     ::trace //This leads to the arguments being printed in front of the test result.
     )]
-    fn test_is_king_in_check(
-        color: Color,
+    fn test_is_active_king_checkmate(
         game_state_config: &str,
-        king_pos_config: &str,
-        expected_is_check: bool,
+        move_config: &str,
+        expected_is_mate: bool,
     ) {
-        let game_state = game_state_config.parse::<GameState>().unwrap();
-        let king_pos = king_pos_config.parse::<Position>().unwrap();
+        // pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> bool {
+        let latest_move = move_config.parse::<Move>().unwrap();
+        let (game_state, _) = game_state_config.parse::<GameState>().unwrap().do_move(latest_move);
+        let king_pos = game_state.get_active_king();
+        let color = game_state.turn_by;
 
-        let actual_in_check = is_king_in_check(king_pos, color, &game_state.board);
-        assert_eq!(actual_in_check, expected_is_check);
+        let actual_is_mate = is_active_king_checkmate(king_pos, color, &game_state, latest_move);
+        assert_eq!(actual_is_mate, expected_is_mate);
+
+        let actual_is_mate_toggled = is_active_king_checkmate(king_pos.toggle_row(), color.toggle(), &game_state.toggle_colors(), latest_move.toggle_rows());
+        assert_eq!(actual_is_mate_toggled, expected_is_mate);
+    }
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+    #[rstest(
+    game_state_config, move_config, expected_attack_situation,
+    case("e2-e4 e7-e5", "d1-h5", AttackSituation::NoAttacker),
+    case("e2-e4 f7-f5", "d1-h5", AttackSituation::OneAttacker(Attack::OnLine(Direction::DownRight, 3))),
+    case("e2-e4 e7-e5 f1-c4 d7-d6 d1-f3 c7-c5", "f3-f7", AttackSituation::OneAttacker(Attack::OnLine(Direction::DownRight, 1))),
+    case("white ♔e1 ♖a7 ♖b7 ♚e8", "a7-a8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Left, 4))),
+    case("white ♔e1 ♕a1 ♚b8", "a1-a8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Left, 1))),
+    case("white ♔e1 ♕a1 ♚c8", "a1-a8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Left, 2))),
+    case("white ♔e1 ♕a1 ♚b8", "a1-a7", AttackSituation::OneAttacker(Attack::OnLine(Direction::DownLeft, 1))),
+    case("black ♔f1 ♖e1 ♖g1 ♙e2 ♙g2 ♚e8 ♜h8", "e8cg8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Up, 7))),
+    case("black ♔f1 Eb3 ♙b4 ♟c4 ♚e8 ♝a6", "c4eb3", AttackSituation::OneAttacker(Attack::OnLine(Direction::UpLeft, 5))),
+    case("black ♔c2 Eb3 ♙b4 ♟c4 ♚e8", "c4eb3", AttackSituation::OneAttacker(Attack::ByPawn("b3".parse::<Position>().unwrap()))),
+    case("black ♔e1 ♝a2 ♞a1 ♚e8", "a1-c2", AttackSituation::OneAttacker(Attack::ByKnight("c2".parse::<Position>().unwrap()))),
+    case("black ♔f1 ♜a1 ♞b1 ♚e8", "b1-d2", AttackSituation::TwoAttacker),
+    case("black ♔f1 ♜a1 ♝b1 ♚e8", "b1-d3", AttackSituation::TwoAttacker),
+    case("black ♔c2 Eb3 ♙b4 ♟c4 ♜c5 ♚e8", "c4eb3", AttackSituation::TwoAttacker),
+    case("black ♔c3 Eb3 ♙b4 ♟c4 ♜c5 ♝a5 ♚e8", "c4eb3", AttackSituation::TwoAttacker),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_get_attack_situation(
+        game_state_config: &str,
+        move_config: &str,
+        expected_attack_situation: AttackSituation,
+    ) {
+        // pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> bool {
+        let latest_move = move_config.parse::<Move>().unwrap();
+        let (game_state, _) = game_state_config.parse::<GameState>().unwrap().do_move(latest_move);
+        let king_pos = game_state.get_active_king();
+        let color = game_state.turn_by;
+
+        let actual_attack_situation = get_attack_situation(king_pos, color, &game_state, latest_move);
+        assert_eq!(actual_attack_situation, expected_attack_situation);
     }
 }
 

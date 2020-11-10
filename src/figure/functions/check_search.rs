@@ -135,7 +135,7 @@ pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Colo
     false
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Attack {
     OnLine(Direction, usize),
     ByPawn(Position),
@@ -143,6 +143,7 @@ pub enum Attack {
 }
 
 pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color, board: &Board) -> Option<Attack> {
+    debug_assert!(!board.is_empty(attacker_pos), format!("attacker_pos shouldn't be empty: {}, board: {}", attacker_pos, board));
     let attacker_type = board.get_figure(attacker_pos).unwrap().fig_type;
     match king_pos.get_direction(attacker_pos) {
         None => {
@@ -252,7 +253,7 @@ fn get_queen_or_rook_attack(king_pos: Position, direction: Direction, attacker_p
         direction,
         max(
             (king_pos.row - attacker_pos.row).abs(),
-            (king_pos.row - attacker_pos.column).abs(),
+            (king_pos.column - attacker_pos.column).abs(),
         ) as usize
     )
 }
@@ -298,5 +299,29 @@ mod tests {
 
         let actual_in_check = is_king_in_check(king_pos, color, &game_state.board);
         assert_eq!(actual_in_check, expected_is_check);
+    }
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+    #[rstest(
+    attacker_pos_str, game_state_config, king_pos_str, expected_opt_attack,
+    case("a7", "black ♔b3 ♙a7 ♚b8", "b8", Some(Attack::ByPawn("a7".parse::<Position>().unwrap()))),
+    case("a6", "black ♔b3 ♘a6 ♚b8", "b8", Some(Attack::ByKnight("a6".parse::<Position>().unwrap()))),
+    case("a8", "black ♔b3 ♖a8 ♚b8", "b8", Some(Attack::OnLine(Direction::Left, 1))),
+    case("d6", "black ♔b3 ♕d6 ♚b8", "b8", Some(Attack::OnLine(Direction::DownRight, 2))),
+    case("e5", "black ♔b3 ♗e5 ♚b8", "b8", Some(Attack::OnLine(Direction::DownRight, 3))),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_gives_check(
+        attacker_pos_str: &str,
+        game_state_config: &str,
+        king_pos_str: &str,
+        expected_opt_attack: Option<Attack>,
+    ) {
+        let attacker_pos = attacker_pos_str.parse::<Position>().unwrap();
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        let king_pos = king_pos_str.parse::<Position>().unwrap();
+
+        let actual_opt_attack = gives_chess(attacker_pos, king_pos, game_state.turn_by, &game_state.board);
+        assert_eq!(actual_opt_attack, expected_opt_attack);
     }
 }

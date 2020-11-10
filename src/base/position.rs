@@ -7,7 +7,7 @@ use crate::game::{Board, FieldContent, USIZE_RANGE_063};
 use tinyvec::alloc::fmt::Formatter;
 use crate::base::direction::Direction;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq)]
 pub struct Position {
     pub column: i8,
     pub row: i8,
@@ -267,10 +267,6 @@ impl PartialEq for Position {
     fn ne(&self, other: &Self) -> bool {
         self.index!=other.index
     }
-}
-
-impl Eq for Position {
-
 }
 
 impl fmt::Display for Position {

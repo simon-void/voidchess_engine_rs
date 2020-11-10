@@ -465,10 +465,7 @@ impl GameState {
     }
 
     pub fn is_active_king_in_check(&self, opt_latest_move: Option<Move>) -> bool {
-        let king_pos = match self.turn_by {
-            Color::White => self.white_king_pos,
-            Color::Black => self.black_king_pos,
-        };
+        let king_pos = self.get_active_king();
         match opt_latest_move {
             None => {is_king_in_check(king_pos, self.turn_by, &self.board)}
             Some(latest_move) => {is_king_in_check_after(latest_move, king_pos, self.turn_by, &self.board)}
@@ -476,11 +473,16 @@ impl GameState {
     }
 
     pub fn is_active_king_checkmate(&self, latest_move: Move) -> bool {
-        let king_pos = match self.turn_by {
-            Color::White => self.white_king_pos,
-            Color::Black => self.black_king_pos,
-        };
+        let king_pos = self.get_active_king();
         is_active_king_checkmate(king_pos, self.turn_by, &self, latest_move)
+    }
+
+    pub fn get_active_king(&self) -> Position {
+        if self.turn_by==Color::White {
+            self.white_king_pos
+        } else {
+            self.black_king_pos
+        }
     }
 
     pub fn get_fen_part1to4(&self) -> String {
