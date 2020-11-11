@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 [dependencies]
 rstest = "0.6.4"
 tinyvec  = { version = "1.0.1", features = ["alloc"] }
+rand = { version = "0.7", features = ["stdweb", "wasm-bindgen"] }
 wasm-bindgen = "0.2.68"
 
 [profile.release]

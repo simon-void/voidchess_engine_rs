@@ -1,3 +1,4 @@
+use rand::prelude::*;
 use crate::game::*;
 use crate::engine::evaluations::*;
 use crate::engine::min_max::{evaluate_move};
@@ -60,7 +61,43 @@ fn evaluate_game(game: &Game, pruner: Pruner) -> EvaluatedMove {
         println!("{} - {:?}", it.a_move, it.evaluation);
     });
 
-    evaluated_moves.remove(0)
+    choose_next_move(evaluated_moves)
+}
+
+fn choose_next_move(sorted_evaluated_moves: Vec<EvaluatedMove>) -> EvaluatedMove {
+    fn get_numeric_eval(evaluation: &Evaluation) -> Option<f32> {
+        match evaluation {
+            Evaluation::Numeric(numeric_eval) => Some(*numeric_eval),
+            Evaluation::Draw(_) => Some(0.0),
+            _ => None,
+        }
+    }
+    let mut best_first_iter = sorted_evaluated_moves.iter();
+    let mut chosen_move = *best_first_iter.next().expect("iterator should contain at least one move");
+    let best_eval = match get_numeric_eval(&chosen_move.evaluation) {
+        None => { return chosen_move; }
+        Some(num_eval) => { num_eval }
+    };
+    let mut random = rand::thread_rng();
+    loop {
+        if random.gen::<f32>() < 0.7 {
+            break;
+        }
+        let next_move = match best_first_iter.next() {
+            None => { break; }
+            Some(eval_move) => { *eval_move }
+        };
+        let next_eval = match get_numeric_eval(&next_move.evaluation) {
+            None => { break; }
+            Some(num_eval) => { num_eval }
+        };
+        if best_eval - next_eval < 0.2 {
+            chosen_move = next_move;
+        } else {
+            break;
+        }
+    }
+    chosen_move
 }
 
 //------------------------------Tests------------------------

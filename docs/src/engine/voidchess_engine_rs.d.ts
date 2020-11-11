@@ -31,6 +31,7 @@ export interface InitOutput {
   readonly evaluate_position_after: (a: number, b: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
+  readonly __wbindgen_exn_store: (a: number) => void;
 }
 
 /**
