@@ -48,7 +48,7 @@ fn get_result_json(is_ok: bool, value: String) -> String {
 
 #[wasm_bindgen]
 pub fn evaluate_position_after(game_config: &str) -> JsValue {
-    let evaluation = evaluate(game_config, PRUNER_1_3_5);
+    let evaluation = evaluate(game_config, PRUNER_2_4_6);
     let json = eval_to_json(evaluation, game_config);
     JsValue::from_str(json.as_str())
 }
