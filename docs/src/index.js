@@ -1,6 +1,7 @@
-import init from './engine/voidchess_engine_rs.js';
-import * as wasm from './engine/voidchess_engine_rs.js';
-import {INPUT_EVENT_TYPE, MOVE_INPUT_MODE, Chessboard} from "./cm-chessboard/Chessboard.js"
+import init, * as wasm from './engine/voidchess_engine_rs.js';
+import {Chessboard, INPUT_EVENT_TYPE, MOVE_INPUT_MODE} from "./cm-chessboard/Chessboard.js"
+
+console.log(`number of cores: ${navigator.hardwareConcurrency}`)
 
 const states = {
     LOADING: "loading",
@@ -37,10 +38,7 @@ async function getAllowedMovesAsMap(arrayOfMoveStr) {
     return arrayOfMovesToMoveMap(moveArray);
 }
 
-async function evaluatePositionAfter(arrayOfMoveStr) {
-    let gameEvaluation = await wasm.evaluate_position_after(arrayOfMoveStr.join(' '));
-    return JSON.parse(gameEvaluation);
-}
+const positionEvaluator = new Worker("src/worker_evaluate_position.js", { type: "module" });
 
 function arrayOfMovesToMoveMap(arrayOfMoveStr) {
     /**
@@ -123,8 +121,7 @@ function BoardModel(gameModel) {
     self.board.enableMoveInput(event => {
         switch (event.type) {
             case INPUT_EVENT_TYPE.moveStart:
-                let start_accepted = gameModel.allowedMoves().has(event.square);
-                return start_accepted;
+                return gameModel.allowedMoves().has(event.square);
             case INPUT_EVENT_TYPE.moveDone:
                 let moveOrNull = gameModel.allowedMoves().get(event.squareFrom).find(move=>move.to===event.squareTo);
                 let move_accepted = moveOrNull != null;
@@ -171,40 +168,37 @@ function GameModel() {
         self.moveStrPlayed.push(move.asStr);
         self.allowedMoves(new Map());
         self.state(states.ENGINE_TURN);
-        setTimeout(() => {
-            evaluatePositionAfter([...self.moveStrPlayed()]).then(
-                gameEval => {
-                    if (gameEval.type == gameEvalTypes.ERROR) {
-                        log(gameEval.msg);
-                    }
-                    if (gameEval.type == gameEvalTypes.GAME_ENDED) {
-                        self.evaluation(gameEval.msg);
-                        self.state(states.GAME_ENDED);
-                    }
-                    if (gameEval.type == gameEvalTypes.MOVE_TO_PLAY) {
-                        self.moveStrPlayed.push(gameEval.move);
-                        self.evaluation(gameEval.eval);
-                        let fen = gameEval.fen;
-                        self.boardModel.board.setPosition(fen);
 
-                        getAllowedMovesAsMap(self.moveStrPlayed()).then(
-                            newAllowedMoves => {
-                                if (newAllowedMoves.size == 0) {
-                                    log("no moves left")
-                                }
-                                self.allowedMoves(newAllowedMoves);
-                            }, reason => {
-                                alert(`couldn't compute allowed moves because of ${reason}`)
-                            }
-                        )
+        positionEvaluator.postMessage([...self.moveStrPlayed()]);
+        positionEvaluator.onmessage = function (messageEvent) {
+            let gameEval = messageEvent.data;
+            if (gameEval.type === gameEvalTypes.ERROR) {
+                log(gameEval.msg);
+            }
+            if (gameEval.type === gameEvalTypes.GAME_ENDED) {
+                self.evaluation(gameEval.msg);
+                self.state(states.GAME_ENDED);
+            }
+            if (gameEval.type === gameEvalTypes.MOVE_TO_PLAY) {
+                self.moveStrPlayed.push(gameEval.move);
+                self.evaluation(gameEval.eval);
+                let fen = gameEval.fen;
+                self.boardModel.board.setPosition(fen);
 
-                        self.state(states.HUMAN_TURN);
+                getAllowedMovesAsMap(self.moveStrPlayed()).then(
+                    newAllowedMoves => {
+                        if (newAllowedMoves.size === 0) {
+                            log("no moves left")
+                        }
+                        self.allowedMoves(newAllowedMoves);
+                    }, reason => {
+                        alert(`couldn't compute allowed moves because of ${reason}`)
                     }
-                }, reason => {
-                    alert(`couldn't compute allowed moves because of ${reason}`)
-                }
-            )
-        }, 310);
+                )
+
+                self.state(states.HUMAN_TURN);
+            }
+        };
     };
 }
 
