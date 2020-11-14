@@ -1,6 +1,7 @@
 import init from './engine/voidchess_engine_rs.js';
 import * as wasm from './engine/voidchess_engine_rs.js';
 
+let initPromise = init();
 let hasNotBeenInitialized = true;
 
 onmessage = function (messageEvent) {
@@ -14,13 +15,11 @@ onmessage = function (messageEvent) {
     });
 }
 
-async function evaluatePositionAfter(arrayOfMoveStr) {
+async function evaluatePositionAfter(gameConfig) {
     if (hasNotBeenInitialized) {
-        console.log("initialize wasm")
-        await init();
+        await initPromise;
         hasNotBeenInitialized = false;
     }
-    let gameConfig = arrayOfMoveStr.join(' ');
     let gameEvaluationJson = await wasm.evaluate_position_after(gameConfig);
     return JSON.parse(gameEvaluationJson);
 }

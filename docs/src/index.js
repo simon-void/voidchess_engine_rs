@@ -1,4 +1,5 @@
 import init, * as wasm from './engine/voidchess_engine_rs.js';
+import {evaluateGame} from './worker_pool.js';
 import {Chessboard, INPUT_EVENT_TYPE, MOVE_INPUT_MODE} from "./cm-chessboard/Chessboard.js"
 
 console.log(`number of cores: ${navigator.hardwareConcurrency}`)
@@ -32,13 +33,14 @@ async function getFenResult(arrayOfMoveStr) {
     return JSON.parse(fen);
 }
 
-async function getAllowedMovesAsMap(arrayOfMoveStr) {
+/**
+ * @param {Array<string>} arrayOfMoveStr
+ * @returns {Promise<Array<string>>}
+ */
+async function getAllowedMovesAsArray(arrayOfMoveStr) {
     let movesJson = await wasm.get_concatenated_allowed_moves(arrayOfMoveStr.join(' '));
-    let moveArray = JSON.parse(movesJson);
-    return arrayOfMovesToMoveMap(moveArray);
+    return JSON.parse(movesJson);
 }
-
-const positionEvaluator = new Worker("src/worker_evaluate_position.js", { type: "module" });
 
 function arrayOfMovesToMoveMap(arrayOfMoveStr) {
     /**
@@ -99,9 +101,7 @@ function log(text) {
     output.prepend(log);
 }
 
-const _allowedMovesAtWhiteStartClassic = arrayOfMovesToMoveMap(
-    JSON.parse('["b1-c3", "b1-a3", "g1-h3", "g1-f3", "a2-a3", "a2-a4", "b2-b3", "b2-b4", "c2-c3", "c2-c4", "d2-d3", "d2-d4", "e2-e3", "e2-e4", "f2-f3", "f2-f4", "g2-g3", "g2-g4", "h2-h3", "h2-h4"]')
-);
+const _allowedMoveStrArrayClassic = ["b1-c3", "b1-a3", "g1-h3", "g1-f3", "a2-a3", "a2-a4", "b2-b3", "b2-b4", "c2-c3", "c2-c4", "d2-d3", "d2-d4", "e2-e3", "e2-e4", "f2-f3", "f2-f4", "g2-g3", "g2-g4", "h2-h3", "h2-h4"];
 
 function BoardModel(gameModel) {
     let self = this;
@@ -121,9 +121,9 @@ function BoardModel(gameModel) {
     self.board.enableMoveInput(event => {
         switch (event.type) {
             case INPUT_EVENT_TYPE.moveStart:
-                return gameModel.allowedMoves().has(event.square);
+                return gameModel.allowedMoveMap().has(event.square);
             case INPUT_EVENT_TYPE.moveDone:
-                let moveOrNull = gameModel.allowedMoves().get(event.squareFrom).find(move=>move.to===event.squareTo);
+                let moveOrNull = gameModel.allowedMoveMap().get(event.squareFrom).find(move=>move.to===event.squareTo);
                 let move_accepted = moveOrNull != null;
                 if(move_accepted) {
                     setTimeout(()=>{
@@ -158,7 +158,10 @@ function GameModel() {
     let self = this;
     self.evaluation = ko.observable("waiting for your move");
     self.state = ko.observable(states.LOADING)
-    self.allowedMoves = ko.observable(_allowedMovesAtWhiteStartClassic);
+    self.allowedMoveStrArray = ko.observableArray(_allowedMoveStrArrayClassic);
+    self.allowedMoveMap = ko.computed(()=>{
+        return arrayOfMovesToMoveMap(self.allowedMoveStrArray());
+    });
     self.moveStrPlayed = ko.observableArray([]);
     // this.fullName = ko.computed(function() {
     //     return this.firstName() + " " + this.lastName();
@@ -166,39 +169,43 @@ function GameModel() {
     self.boardModel = new BoardModel(self);
     self.informOfMove = function (move) {
         self.moveStrPlayed.push(move.asStr);
-        self.allowedMoves(new Map());
+        self.allowedMoveStrArray([]);
         self.state(states.ENGINE_TURN);
 
-        positionEvaluator.postMessage([...self.moveStrPlayed()]);
-        positionEvaluator.onmessage = function (messageEvent) {
-            let gameEval = messageEvent.data;
-            if (gameEval.type === gameEvalTypes.ERROR) {
-                log(gameEval.msg);
-            }
-            if (gameEval.type === gameEvalTypes.GAME_ENDED) {
-                self.evaluation(gameEval.msg);
-                self.state(states.GAME_ENDED);
-            }
-            if (gameEval.type === gameEvalTypes.MOVE_TO_PLAY) {
-                self.moveStrPlayed.push(gameEval.move);
-                self.evaluation(gameEval.eval);
-                let fen = gameEval.fen;
-                self.boardModel.board.setPosition(fen);
+        evaluateGame(
+            [...self.moveStrPlayed()],
+            [...self.allowedMoveStrArray()],
+            self.evaluation,
+        ).then(
+            (gameEval) => {
+                if (gameEval.type === gameEvalTypes.ERROR) {
+                    log(gameEval.msg);
+                }
+                if (gameEval.type === gameEvalTypes.GAME_ENDED) {
+                    self.evaluation(gameEval.msg);
+                    self.state(states.GAME_ENDED);
+                }
+                if (gameEval.type === gameEvalTypes.MOVE_TO_PLAY) {
+                    self.moveStrPlayed.push(gameEval.move);
+                    self.evaluation(gameEval.eval);
+                    let fen = gameEval.fen;
+                    self.boardModel.board.setPosition(fen);
 
-                getAllowedMovesAsMap(self.moveStrPlayed()).then(
-                    newAllowedMoves => {
-                        if (newAllowedMoves.size === 0) {
-                            log("no moves left")
+                    getAllowedMovesAsArray(self.moveStrPlayed()).then(
+                        newAllowedMovesArray => {
+                            if (newAllowedMovesArray.length === 0) {
+                                log("no moves left")
+                            }
+                            self.allowedMoveStrArray(newAllowedMovesArray);
+                        }, reason => {
+                            alert(`couldn't compute allowed moves because of ${reason}`)
                         }
-                        self.allowedMoves(newAllowedMoves);
-                    }, reason => {
-                        alert(`couldn't compute allowed moves because of ${reason}`)
-                    }
-                )
+                    )
 
-                self.state(states.HUMAN_TURN);
+                    self.state(states.HUMAN_TURN);
+                }
             }
-        };
+        );
     };
 }
 
