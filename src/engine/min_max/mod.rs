@@ -11,10 +11,9 @@ pub fn evaluate_move(
     a_move: Move,
     pruner: Pruner,
     evaluate_for: Color,
+    current_max_one_level_up: Evaluation,
     eval_type: StaticEvalType,
 ) -> Evaluation {
-    let current_max_one_level_up = MIN_EVALUATION;
-
     get_min_after(
         old_game,
         a_move,
@@ -235,6 +234,7 @@ mod tests {
             next_move,
             PRUNER_L2,
             Color::White,
+            MIN_EVALUATION,
             StaticEvalType::Default,
         );
         assert_eq!(

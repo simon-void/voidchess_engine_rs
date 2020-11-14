@@ -44,16 +44,24 @@ pub fn evaluate(game_config: &str, pruner: Pruner) -> GameEvaluation {
 fn evaluate_game(game: &Game, pruner: Pruner) -> EvaluatedMove {
 
     let eval_type = StaticEvalType::Default;
-    let mut evaluated_moves: Vec<EvaluatedMove> = game.get_reachable_moves().iter().map(|next_move| {
+    let mut evaluated_moves: Vec<EvaluatedMove> = vec![];
+    let mut current_max_eval: Evaluation = MIN_EVALUATION;
+    for next_move in game.get_reachable_moves().iter() {
         let evaluation = evaluate_move(
             &game,
             *next_move,
             pruner,
             game.get_game_state().turn_by,
+            current_max_eval,
             eval_type,
         );
-        EvaluatedMove { a_move: *next_move, evaluation }
-    }).collect();
+
+        if evaluation > current_max_eval {
+            current_max_eval = evaluation;
+        }
+
+        evaluated_moves.push(EvaluatedMove { a_move: *next_move, evaluation });
+    }
 
     evaluated_moves.sort_unstable_by(|e_m1, e_m2| e_m2.evaluation.cmp(&e_m1.evaluation));
 
