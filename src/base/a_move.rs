@@ -5,12 +5,20 @@ use tinyvec::TinyVec;
 use crate::base::{ChessError, ErrorKind};
 use tinyvec::alloc::fmt::Formatter;
 use crate::figure::FigureType;
+use std::hash::{Hash, Hasher};
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Move {
     pub from: Position,
     pub to: Position,
     pub move_type: MoveType,
+}
+
+impl Hash for Move {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_usize(self.from.index);
+        state.write_usize(self.to.index);
+    }
 }
 
 impl Move {
@@ -123,14 +131,6 @@ pub enum CastlingType {
     QueenSide,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum MoveType {
-    Normal,
-    PawnPromotion(PromotionType),
-    EnPassant,
-    Castling(CastlingType)
-}
-
 impl str::FromStr for MoveType {
     type Err = ChessError;
 
@@ -166,4 +166,12 @@ impl fmt::Display for MoveType {
         };
         write!(f, "{}", code)
     }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum MoveType {
+    Normal,
+    PawnPromotion(PromotionType),
+    EnPassant,
+    Castling(CastlingType)
 }

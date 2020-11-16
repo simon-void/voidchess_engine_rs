@@ -1,5 +1,8 @@
+use serde::{Serialize, Deserialize};
+
 use std::cmp::Ordering;
 use crate::base::Move;
+use crate::engine::evaluations::frontend::MoveEvaluation;
 
 pub(crate) mod frontend;
 pub(crate) mod testing;
@@ -12,7 +15,7 @@ pub enum Evaluation {
     LoseIn(u8, f32),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum DrawReason {
     StaleMate,
     InsufficientMaterial,
@@ -90,7 +93,7 @@ impl PartialOrd for Evaluation {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EvaluatedMove {
     pub a_move: Move,
-    pub evaluation: Evaluation,
+    pub evaluation: MoveEvaluation,
 }
 
 //------------------------------Tests------------------------

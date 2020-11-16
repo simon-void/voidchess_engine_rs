@@ -5,9 +5,13 @@ let initPromise = init();
 let hasNotBeenInitialized = true;
 
 onmessage = function (messageEvent) {
-    evaluatePositionAfter(messageEvent.data.gameConfig).then(gameEvalJson=>{
+    let gameConfig = messageEvent.data.gameConfig;
+    let moveStr = messageEvent.data.moveStr;
+    let workerIndex = messageEvent.data.workerIndex;
+    evaluateMove(gameConfig, moveStr).then(gameEvalJson=>{
         postMessage({
             "gameEvalJson": gameEvalJson,
+            "workerIndex": workerIndex,
         });
     }, reason => {
         postMessage({
@@ -17,7 +21,7 @@ onmessage = function (messageEvent) {
     });
 }
 
-async function evaluatePositionAfter(gameConfig) {
+async function evaluateMove(gameConfig, moveStr) {
     if (hasNotBeenInitialized) {
         await initPromise;
         hasNotBeenInitialized = false;

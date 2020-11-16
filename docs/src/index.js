@@ -23,9 +23,10 @@ const gameEvalTypes = {
     ERROR: "Err",
 };
 
+let initPromise = init();
+
 async function init_wasm() {
-    console.log("init wasm");
-    await init();
+    await initPromise;
 }
 
 async function getFenResult(arrayOfMoveStr) {
@@ -140,7 +141,7 @@ function BoardModel(gameModel) {
         if(move.type!==moveTypes.NORMAL) {
             let moves_plus_ongoing_move = [...gameModel.moveStrPlayed(), move.asStr];
             getFenResult(moves_plus_ongoing_move).then(fenResult => {
-                    if (fenResult.isOk) {
+                    if (fenResult.is_ok) {
                         let fen = fenResult.value;
                         self.board.setPosition(fen);
                     } else {
@@ -168,25 +169,26 @@ function GameModel() {
     // }, this);
     self.boardModel = new BoardModel(self);
     self.informOfMove = function (move) {
-        self.moveStrPlayed.push(move.asStr);
+        let possibleMoves = [...self.allowedMoveStrArray()];
         self.allowedMoveStrArray([]);
+        self.moveStrPlayed.push(move.asStr);
         self.state(states.ENGINE_TURN);
 
         evaluateGame(
             [...self.moveStrPlayed()],
-            [...self.allowedMoveStrArray()],
+            possibleMoves,
             self.evaluation,
         ).then(
             (gameEval) => {
-                if (gameEval.type === gameEvalTypes.ERROR) {
+                if (gameEval.result_type === gameEvalTypes.ERROR) {
                     log(gameEval.msg);
                 }
-                if (gameEval.type === gameEvalTypes.GAME_ENDED) {
+                if (gameEval.result_type === gameEvalTypes.GAME_ENDED) {
                     self.evaluation(gameEval.msg);
                     self.state(states.GAME_ENDED);
                 }
-                if (gameEval.type === gameEvalTypes.MOVE_TO_PLAY) {
-                    self.moveStrPlayed.push(gameEval.move);
+                if (gameEval.result_type === gameEvalTypes.MOVE_TO_PLAY) {
+                    self.moveStrPlayed.push(gameEval.move_to_play);
                     self.evaluation(gameEval.eval);
                     let fen = gameEval.fen;
                     self.boardModel.board.setPosition(fen);

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "compiling to wasm module ..."
+wasm-pack build --dev --target web
+
+echo ""
+echo "copying generated module from pkg to docs/src/engine ..."
+cp -f ./pkg/voidchess_engine* ./docs/src/engine
+cp -f ./pkg/package.json ./docs/src/engine

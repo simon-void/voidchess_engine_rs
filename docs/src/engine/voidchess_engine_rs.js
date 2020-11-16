@@ -45,6 +45,11 @@ function takeObject(idx) {
     dropObject(idx);
     return ret;
 }
+/**
+*/
+export function main_js() {
+    wasm.main_js();
+}
 
 let WASM_VECTOR_LEN = 0;
 
@@ -144,6 +149,31 @@ export function evaluate_position_after(game_config) {
     return takeObject(ret);
 }
 
+/**
+* @param {string} game_config
+* @param {string} move_str
+* @returns {any}
+*/
+export function evaluate_move_after(game_config, move_str) {
+    var ptr0 = passStringToWasm0(game_config, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    var ptr1 = passStringToWasm0(move_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len1 = WASM_VECTOR_LEN;
+    var ret = wasm.evaluate_move_after(ptr0, len0, ptr1, len1);
+    return takeObject(ret);
+}
+
+/**
+* @param {string} game_eval_result_array_str
+* @returns {any}
+*/
+export function pick_move_to_play(game_eval_result_array_str) {
+    var ptr0 = passStringToWasm0(game_eval_result_array_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    var ret = wasm.pick_move_to_play(ptr0, len0);
+    return takeObject(ret);
+}
+
 function handleError(f) {
     return function () {
         try {
@@ -239,6 +269,12 @@ async function init(input) {
         var ret = module;
         return addHeapObject(ret);
     };
+    imports.wbg.__wbg_log_3bafd82835c6de6d = function(arg0) {
+        console.log(getObject(arg0));
+    };
+    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
+        throw new Error(getStringFromWasm0(arg0, arg1));
+    };
 
     if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {
         input = fetch(input);
@@ -248,7 +284,7 @@ async function init(input) {
 
     wasm = instance.exports;
     init.__wbindgen_wasm_module = module;
-
+    wasm.__wbindgen_start();
     return wasm;
 }
 

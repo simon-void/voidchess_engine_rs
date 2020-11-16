@@ -209,23 +209,23 @@ mod tests {
     use super::*;
     use rstest::*;
     use crate::engine::evaluations::*;
-    use crate::engine::evaluations::testing::RoughEvaluation;
+    use crate::engine::evaluations::testing::{EvaluationMatcher};
     use crate::engine::min_max::pruner::PRUNER_L2;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 
     #[rstest(
-    game_config_testing_white, next_move_str, expected_evaluation,
-    case("white ♔b6 ♙a7 ♚a8", "b6-a6", RoughEvaluation::Draw(DrawReason::StaleMate)),
-    case("white ♔b6 ♙a7 ♚a8", "b6-c7", RoughEvaluation::Draw(DrawReason::InsufficientMaterial)),
-    case("white ♔d6 ♖a7 ♚d8", "a7-a8", RoughEvaluation::WinIn(1)),
-    case("white ♔f8 ♜a7 ♚e6", "f8-e8", RoughEvaluation::LoseIn(1)),
+    game_config_testing_white, next_move_str, expected_matcher,
+    case("white ♔b6 ♙a7 ♚a8", "b6-a6", EvaluationMatcher::Draw(DrawReason::StaleMate)),
+    case("white ♔b6 ♙a7 ♚a8", "b6-c7", EvaluationMatcher::Draw(DrawReason::InsufficientMaterial)),
+    case("white ♔d6 ♖a7 ♚d8", "a7-a8", EvaluationMatcher::WinIn),
+    case("white ♔f8 ♜a7 ♚e6", "f8-e8", EvaluationMatcher::LoseIn),
     ::trace //This leads to the arguments being printed in front of the test result.
     )]
     fn test_evaluate_move(
         game_config_testing_white: &str,
         next_move_str: &str,
-        expected_evaluation: RoughEvaluation,
+        expected_matcher: EvaluationMatcher,
     ) {
         let game = game_config_testing_white.parse::<Game>().unwrap();
         let next_move = next_move_str.parse::<Move>().unwrap();
@@ -237,10 +237,9 @@ mod tests {
             MIN_EVALUATION,
             StaticEvalType::Default,
         );
-        assert_eq!(
-            RoughEvaluation::from(&actual_evaluation),
-            expected_evaluation,
-            "original evaluation: {:?}", actual_evaluation
+        assert!(
+            expected_matcher.matches(&actual_evaluation),
+            format!("actual_eval: {:?}", actual_evaluation),
         );
     }
 }

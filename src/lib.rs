@@ -1,4 +1,7 @@
 use wasm_bindgen::prelude::*;
+use serde::{Serialize, Deserialize};
+use web_sys::console;
+use std::collections::HashMap;
 
 mod figure;
 mod base;
@@ -9,10 +12,28 @@ pub use crate::game::{Game};
 pub use crate::engine::evaluate;
 pub use crate::figure::functions::allowed::get_allowed_moves;
 pub use crate::engine::min_max::pruner::*;
-use crate::base::ChessError;
-use crate::engine::evaluations::frontend::{GameEvaluation, GameEndResult};
-use crate::engine::evaluations::DrawReason;
+use crate::base::{Move};
+use crate::engine::evaluations::frontend::{GameEvaluation, GameEndResult, MoveEvaluation};
+use crate::engine::evaluations::{DrawReason, EvaluatedMove};
+use crate::engine::{evaluate_single_move, choose_next_move};
 
+
+// This is like the `main` function, except for JavaScript.
+#[wasm_bindgen(start)]
+pub fn main_js() -> Result<(), JsValue> {
+    // This provides better error messages in debug mode.
+    // It's disabled in release mode so it doesn't bloat up the file size.
+    #[cfg(debug_assertions)]
+        console_error_panic_hook::set_once();
+
+
+    // Your code goes here!
+    console::log_1(&JsValue::from_str("wasm init"));
+
+    Ok(())
+}
+
+static pruner: Pruner = PRUNER_2_4_8;
 
 #[wasm_bindgen]
 pub fn get_greeting_for(name: &str) -> JsValue {
@@ -29,26 +50,39 @@ pub fn get_concatenated_allowed_moves(game_config: &str) -> JsValue {
 
 #[wasm_bindgen]
 pub fn get_fen(game_config: &str) -> JsValue {
-    let json = match game_config.parse::<Game>() {
+    let fen_result = match game_config.parse::<Game>() {
         Ok(game) => {
             let fen = game.get_fen();
-            get_result_json(true, fen)
+            FenResult {
+                is_ok: true,
+                value: fen,
+            }
         }
         Err(err) => {
             let error_msg = format!("{:?}: {}", err.kind, err.msg);
-            get_result_json(false, error_msg)
+            FenResult {
+                is_ok: false,
+                value: error_msg,
+            }
         }
     };
+    let json = serde_json::to_string(&fen_result).unwrap();
     JsValue::from_str(json.as_str())
 }
 
-fn get_result_json(is_ok: bool, value: String) -> String {
-    format!("{}{}{}{}{}", "{\"isOk\":", is_ok, ", \"value\":\"", value, "\"}")
+// fn get_result_json(is_ok: bool, value: String) -> String {
+//     format!("{}{}{}{}{}", "{\"isOk\":", is_ok, ", \"value\":\"", value, "\"}")
+// }
+
+#[derive(Serialize, Deserialize, Debug)]
+struct FenResult {
+    is_ok: bool,
+    value: String,
 }
 
 #[wasm_bindgen]
 pub fn evaluate_position_after(game_config: &str) -> JsValue {
-    let evaluation = evaluate(game_config, PRUNER_2_4_6);
+    let evaluation = evaluate(game_config, pruner);
     let json = eval_to_json(evaluation, game_config);
     JsValue::from_str(json.as_str())
 }
@@ -68,41 +102,185 @@ fn eval_to_json(game_eval: GameEvaluation, game_config: &str) -> String {
                     }
                 }
             };
-            get_eval_json2("GameEnded", "msg", String::from(text))
+            get_eval_json_end_or_err("GameEnded", String::from(text))
         }
         GameEvaluation::MoveToPlay(chosen_move, eval) => {
-            let eval_string = format!("{:?}", eval);
             let new_game_config = format!("{} {}", game_config, chosen_move);
             let fen = new_game_config.as_str().parse::<Game>().unwrap().get_fen();
-            get_eval_json4(
-                "MoveToPlay",
-                "move", chosen_move.to_string(),
-                "eval", eval_string,
-                "fen", fen
-            )
+            move_to_play_to_json(chosen_move, eval, fen)
         }
         GameEvaluation::Err(msg) => {
-            get_eval_json2("Err", "msg", msg)
+            get_eval_json_end_or_err("Err", msg)
         }
     }
 }
 
-fn get_eval_json4(
-    value1: &str,
-    key2: &str,
-    value2: String,
-    key3: &str,
-    value3: String,
-    key4: &str,
-    value4: String,
-) -> String {
-    format!("{}\"type\":\"{}\",\"{}\":\"{}\",\"{}\":\"{}\",\"{}\":\"{}\"{}", "{", value1, key2, value2, key3, value3, key4, value4, "}")
+fn move_to_play_to_json(chosen_move: Move, eval: MoveEvaluation, fen: String) -> String {
+    let eval_string = serde_json::to_string(&eval).unwrap();
+    let result = GameEvaluationResultMoveToPlay {
+        result_type: "MoveToPlay".to_string(),
+        move_to_play: chosen_move.to_string(),
+        eval: eval_string,
+        fen
+    };
+    serde_json::to_string(&result).unwrap()
 }
 
-fn get_eval_json2(
-    value1: &str,
-    key2: &str,
-    value2: String,
+fn get_eval_json_end_or_err(
+    result_type: &str,
+    msg: String,
 ) -> String {
-    format!("{}\"type\":\"{}\",\"{}\":\"{}\"{}", "{", value1, key2, value2, "}")
+    let result = GameEvaluationResultEndOrErr {
+        result_type: result_type.to_string(),
+        msg,
+    };
+    serde_json::to_string(&result).unwrap()
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct GameEvaluationResultEndOrErr {
+    result_type: String,
+    msg: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+struct GameEvaluationResultMoveToPlay {
+    result_type: String,
+    move_to_play: String,
+    eval: String,
+    fen: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+enum GameEvaluationResult {
+    EndOrErr(GameEvaluationResultEndOrErr),
+    MoveToPlay(GameEvaluationResultMoveToPlay),
+}
+
+#[wasm_bindgen]
+pub fn evaluate_move_after(game_config: &str, move_str: &str) -> JsValue {
+    let json = match move_str.parse::<Move>() {
+        Err(err) => {
+            let err_msg = format!("{}", err);
+            get_eval_json_end_or_err("Err", err_msg)
+        }
+        Ok(move_to_evaluate) => {
+            let evaluation = evaluate_single_move(game_config, move_to_evaluate, pruner);
+            eval_to_json(evaluation, game_config)
+        }
+    };
+
+    JsValue::from_str(json.as_str())
+}
+
+#[wasm_bindgen]
+pub fn pick_move_to_play(game_eval_result_array_str: &str) -> JsValue {
+
+    console::log_1(&JsValue::from_str(format!("pick_move_to_play param: {}", game_eval_result_array_str).as_str()));
+
+    let game_eval_results: Vec<GameEvaluationResult> = game_eval_result_array_str.split('|').map(|result_str|{
+        let result = match serde_json::from_str::<GameEvaluationResultMoveToPlay>(result_str) {
+            Ok(move_to_play_result) => {
+                GameEvaluationResult::MoveToPlay(move_to_play_result)
+            }
+            Err(_) => {
+                match serde_json::from_str::<GameEvaluationResultEndOrErr>(result_str) {
+                    Ok(end_or_err_result) => {
+                        GameEvaluationResult::EndOrErr(end_or_err_result)
+                    }
+                    Err(_) => {
+                        panic!("json was neither GameEvalMoveToPlay nor GameEvalEnd/Err: {}", result_str);
+                    }
+                }
+            }
+        };
+        result
+    }).collect();
+
+    // let game_eval_results: Vec<GameEvaluationResult> = serde_json::from_str(game_eval_result_array_str).unwrap();
+    let opt_game_eval_result_end_or_err = game_eval_results.iter().find(|result|{
+        match result {
+            GameEvaluationResult::EndOrErr(_) => {true}
+            GameEvaluationResult::MoveToPlay(_) => {false}
+        }
+    });
+    if let Some(game_eval_result_end_or_err) = opt_game_eval_result_end_or_err {
+        let err_or_game_ended_json = match game_eval_result_end_or_err {
+            GameEvaluationResult::EndOrErr(end_or_err) => {serde_json::to_string(end_or_err).unwrap()}
+            GameEvaluationResult::MoveToPlay(_) => { get_eval_json_end_or_err("Err", "filtered by EndOrErr, still got MoveToPlay".to_string())}
+        };
+        return JsValue::from_str(err_or_game_ended_json.as_str());
+    }
+    // everything should be move to play
+    let mut fen_by_move = HashMap::new();
+    let moves_to_pick_from: Vec<EvaluatedMove> = game_eval_results.iter().map(|game_result|{
+        match game_result {
+            GameEvaluationResult::EndOrErr(_) => {panic!("only MoveToPlay expected at this point")}
+            GameEvaluationResult::MoveToPlay(type4) => {
+                let move_played:Move = type4.move_to_play.parse().unwrap();
+                let eval: MoveEvaluation = serde_json::from_str(type4.eval.as_str()).unwrap();
+                let fen = type4.fen.as_str();
+                fen_by_move.insert(move_played, fen);
+                EvaluatedMove {
+                    a_move: move_played,
+                    evaluation: eval,
+                }
+            }
+        }
+    }).collect();
+
+    let next_move = choose_next_move(moves_to_pick_from);
+    let fen = fen_by_move.get(&next_move.a_move).unwrap().to_string();
+    let json = move_to_play_to_json(    next_move.a_move, next_move.evaluation, fen);
+
+    console::log_1(&JsValue::from_str(format!("json of the picked gameEval: {}", json).as_str()));
+
+    JsValue::from_str(json.as_str())
+}
+
+
+
+//------------------------------Tests------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serialize_deserialise_GameEvaluationResultMoveToPlay() {
+        let move_to_play_result = GameEvaluationResultMoveToPlay {
+            result_type: "MoveToPlay".to_string(),
+            move_to_play: "b7-b6".to_string(),
+            eval: "{\"Numeric\":-1.0050015}".to_string(),
+            fen: "rnbqkbnr/p1pppppp/1p6/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2".to_string()
+        };
+        let serialized = serde_json::to_string(&move_to_play_result).unwrap();
+        let deserialized: GameEvaluationResultMoveToPlay = serde_json::from_str(serialized.as_str()).unwrap();
+        assert_eq!(
+            deserialized,
+            move_to_play_result,
+        );
+    }
+
+    #[test]
+    fn test_deserialise_GameEvaluationResultMoveToPlay() {
+        let chosen_move = "a2-a4".parse::<Move>().unwrap();
+        let eval = MoveEvaluation::Numeric(5.5);
+        let fen = "rnbqkbnr/p1pppppp/1p6/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2".to_string();
+        let json = move_to_play_to_json(chosen_move, eval, fen);
+        let deserialized: GameEvaluationResultMoveToPlay = serde_json::from_str(json.as_str()).unwrap();
+        assert_eq!(
+            deserialized.move_to_play,
+            "a2-a4",
+        );
+        assert_eq!(
+            deserialized.fen,
+            "rnbqkbnr/p1pppppp/1p6/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2".to_string(),
+        );
+        let deserialized_move_eval: MoveEvaluation = serde_json::from_str(deserialized.eval.as_str()).unwrap();
+        assert_eq!(
+            deserialized_move_eval,
+            MoveEvaluation::Numeric(5.5),
+        );
+    }
 }
