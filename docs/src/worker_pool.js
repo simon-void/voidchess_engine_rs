@@ -4,7 +4,7 @@ let initPromise = init();
 let hasNotBeenInitialized = true;
 
 const isFirefox = navigator.userAgent.includes("Firefox");
-const nrOfWorkersToUse = navigator.hardwareConcurrency || 1;
+const nrOfWorkersToUse = Math.max(1, (navigator.hardwareConcurrency || 1) - 1);
 
 const positionEvaluatorWorker = new Worker("src/worker_evaluate_position.js", { type: "module" });
 const moveEvaluatorWorkerArray = Array(nrOfWorkersToUse).fill().map((_, i) =>
