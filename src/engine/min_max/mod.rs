@@ -18,6 +18,7 @@ pub fn evaluate_move(
         old_game,
         a_move,
         0,
+        false,
         pruner,
         MoveStats::default(),
         evaluate_for,
@@ -30,6 +31,7 @@ fn get_max_after(
     old_game: &Game,
     a_move: Move,
     old_half_step: usize,
+    was_check: bool,
     pruner: Pruner,
     old_move_stats: MoveStats,
     evaluate_for: Color,
@@ -51,7 +53,8 @@ fn get_max_after(
             }
         }
         MoveResult::Ongoing(game, move_stats) => {
-            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats) {
+            let is_check = game.is_active_king_in_check();
+            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats, is_check, was_check) {
                 return if game.is_active_king_checkmate() {
                     get_lose_eval(game.get_game_state(), new_half_step + 1, evaluate_for, eval_type)
                 } else {
@@ -65,6 +68,7 @@ fn get_max_after(
                     &game,
                     *next_move,
                     new_half_step,
+                    is_check,
                     pruner,
                     move_stats,
                     evaluate_for,
@@ -92,6 +96,7 @@ fn get_min_after(
     old_game: &Game,
     a_move: Move,
     old_half_step: usize,
+    was_check: bool,
     pruner: Pruner,
     old_move_stats: MoveStats,
     evaluate_for: Color,
@@ -108,7 +113,8 @@ fn get_min_after(
             get_min_after_stopped_eval(reason, final_game_state, new_half_step, evaluate_for, eval_type)
         }
         MoveResult::Ongoing(game, move_stats) => {
-            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats) {
+            let is_check = game.is_active_king_in_check();
+            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats, is_check, was_check) {
                 return if game.is_active_king_checkmate() {
                     Evaluation::WinIn((new_half_step + 1) as u8)
                 } else {
@@ -122,6 +128,7 @@ fn get_min_after(
                     &game,
                     *next_move,
                     new_half_step,
+                    is_check,
                     pruner,
                     move_stats,
                     evaluate_for,

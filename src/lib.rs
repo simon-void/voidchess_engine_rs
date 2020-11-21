@@ -33,7 +33,7 @@ pub fn main_js() -> Result<(), JsValue> {
     Ok(())
 }
 
-static pruner: Pruner = PRUNER_2_4_8;
+static PRUNER: Pruner = PRUNER_1_2_3_4; //_2_4_5_8;
 
 #[wasm_bindgen]
 pub fn get_greeting_for(name: &str) -> JsValue {
@@ -82,7 +82,7 @@ struct FenResult {
 
 #[wasm_bindgen]
 pub fn evaluate_position_after(game_config: &str) -> JsValue {
-    let evaluation = evaluate(game_config, pruner);
+    let evaluation = evaluate(game_config, PRUNER);
     let json = eval_to_json(evaluation, game_config);
     JsValue::from_str(json.as_str())
 }
@@ -165,7 +165,7 @@ pub fn evaluate_move_after(game_config: &str, move_str: &str) -> JsValue {
             get_eval_json_end_or_err("Err", err_msg)
         }
         Ok(move_to_evaluate) => {
-            let evaluation = evaluate_single_move(game_config, move_to_evaluate, pruner);
+            let evaluation = evaluate_single_move(game_config, move_to_evaluate, PRUNER);
             eval_to_json(evaluation, game_config)
         }
     };
