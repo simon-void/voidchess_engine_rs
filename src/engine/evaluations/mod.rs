@@ -93,7 +93,7 @@ impl PartialOrd for Evaluation {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EvaluatedMove {
     pub a_move: Move,
-    pub evaluation: MoveEvaluation,
+    pub evaluation: Evaluation,
 }
 
 //------------------------------Tests------------------------

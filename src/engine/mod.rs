@@ -11,27 +11,6 @@ pub(crate) mod evaluations;
 pub(crate) mod min_max;
 mod static_eval;
 
-pub fn evaluate_single_move(game_config: &str, next_move: Move, pruner: Pruner) -> GameEvaluation {
-    let game_or_final_eval = init_game(game_config);
-    let game = match game_or_final_eval {
-        OngoingGameOrEvaluation::Ongoing(game) => {game}
-        OngoingGameOrEvaluation::Ended(final_eval) => {return final_eval;}
-    };
-
-    let eval_type = get_eval_type_for(&game);
-
-    let evaluation = evaluate_move(
-        &game,
-        next_move,
-        pruner,
-        game.get_game_state().turn_by,
-        MIN_EVALUATION,
-        eval_type,
-    );
-
-    GameEvaluation::MoveToPlay(next_move, MoveEvaluation::from(&evaluation))
-}
-
 pub fn evaluate(game_config: &str, pruner: Pruner) -> GameEvaluation {
     let game_or_final_eval = init_game(game_config);
     let game = match game_or_final_eval {
@@ -49,7 +28,7 @@ pub fn evaluate(game_config: &str, pruner: Pruner) -> GameEvaluation {
         }
     }
 
-    GameEvaluation::MoveToPlay(best_move.a_move, best_move.evaluation)
+    GameEvaluation::MoveToPlay(best_move.a_move, MoveEvaluation::from(&best_move.evaluation))
 }
 
 fn evaluate_game(game: &Game, pruner: Pruner) -> EvaluatedMove {
@@ -71,7 +50,7 @@ fn evaluate_game(game: &Game, pruner: Pruner) -> EvaluatedMove {
             current_max_eval = evaluation;
         }
 
-        evaluated_moves.push(EvaluatedMove { a_move: *next_move, evaluation: MoveEvaluation::from(&evaluation) });
+        evaluated_moves.push(EvaluatedMove { a_move: *next_move, evaluation });
     }
 
     choose_next_move(evaluated_moves)
