@@ -143,7 +143,7 @@ pub enum Attack {
 }
 
 pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color, board: &Board) -> Option<Attack> {
-    debug_assert!(!board.is_empty(attacker_pos), format!("attacker_pos shouldn't be empty: {}, board: {}", attacker_pos, board));
+    debug_assert!(!board.is_empty(attacker_pos), "{}", format!("attacker_pos shouldn't be empty: {}, board: {}", attacker_pos, board));
     let attacker_type = board.get_figure(attacker_pos).unwrap().fig_type;
     match king_pos.get_direction(attacker_pos) {
         None => {

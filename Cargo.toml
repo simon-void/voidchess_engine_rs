@@ -2,8 +2,10 @@
 name = "voidchess_engine_rs"
 version = "0.0.1"
 authors = ["StephanS <simon.void+github@gmail.com>"]
-edition = "2018"
-rust = "1.47"
+description = "a hobby chess engine and wasm boilerplate"
+repository = "https://github.com/simon-void/voidchess_engine_rs"
+edition = "2021"
+rust = "1.57"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -33,3 +35,6 @@ console_error_panic_hook = "0.1.6"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[profile.dev]
+incremental = true

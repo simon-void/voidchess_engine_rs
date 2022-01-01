@@ -3,7 +3,12 @@
   "collaborators": [
     "StephanS <simon.void+github@gmail.com>"
   ],
+  "description": "a hobby chess engine and wasm boilerplate",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simon-void/voidchess_engine_rs"
+  },
   "files": [
     "voidchess_engine_rs_bg.wasm",
     "voidchess_engine_rs.js",

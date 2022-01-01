@@ -235,14 +235,16 @@ async function init(input) {
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
     };
+    imports.wbg.__wbg_randomFillSync_6f956029658662ec = function(arg0, arg1, arg2) {
+        getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
+    };
+    imports.wbg.__wbg_getRandomValues_3ac1b33c90b52596 = function(arg0, arg1, arg2) {
+        getObject(arg0).getRandomValues(getArrayU8FromWasm0(arg1, arg2));
+    };
     imports.wbg.__wbg_self_1c83eb4471d9eb9b = handleError(function() {
         var ret = self.self;
         return addHeapObject(ret);
     });
-    imports.wbg.__wbg_require_5b2b5b594d809d9f = function(arg0, arg1, arg2) {
-        var ret = getObject(arg0).require(getStringFromWasm0(arg1, arg2));
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbg_crypto_c12f14e810edcaa2 = function(arg0) {
         var ret = getObject(arg0).crypto;
         return addHeapObject(ret);
@@ -255,21 +257,19 @@ async function init(input) {
         var ret = getObject(arg0) === undefined;
         return ret;
     };
+    imports.wbg.__wbg_require_5b2b5b594d809d9f = function(arg0, arg1, arg2) {
+        var ret = getObject(arg0).require(getStringFromWasm0(arg1, arg2));
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbg_getRandomValues_05a60bf171bfc2be = function(arg0) {
         var ret = getObject(arg0).getRandomValues;
         return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_getRandomValues_3ac1b33c90b52596 = function(arg0, arg1, arg2) {
-        getObject(arg0).getRandomValues(getArrayU8FromWasm0(arg1, arg2));
-    };
-    imports.wbg.__wbg_randomFillSync_6f956029658662ec = function(arg0, arg1, arg2) {
-        getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
     };
     imports.wbg.__wbg_static_accessor_MODULE_abf5ae284bffdf45 = function() {
         var ret = module;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbg_log_3bafd82835c6de6d = function(arg0) {
+    imports.wbg.__wbg_log_f2e13ca55da8bad3 = function(arg0) {
         console.log(getObject(arg0));
     };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
