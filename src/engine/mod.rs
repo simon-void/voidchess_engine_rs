@@ -116,7 +116,7 @@ pub fn choose_next_move(mut evaluated_moves: Vec<EvaluatedMove>) -> EvaluatedMov
     chosen_move
 }
 
-fn get_eval_type_for(game: &Game) -> StaticEvalType {
+fn get_eval_type_for(_game: &Game) -> StaticEvalType {
     StaticEvalType::Default
 }
 

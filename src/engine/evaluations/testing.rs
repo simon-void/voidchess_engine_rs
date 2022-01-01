@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use super::*;
 use crate::engine::evaluations::frontend::{GameEvaluation, GameEndResult};
 
