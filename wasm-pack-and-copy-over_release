@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "compiling to wasm module ..."
-wasm-pack build --release --target web
+wasm-pack build --no-default-features --release --target web
 
 echo ""
 echo "copying generated module from pkg to docs/src/engine ..."
