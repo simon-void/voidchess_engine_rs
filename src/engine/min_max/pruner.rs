@@ -4,6 +4,7 @@ pub static PRUNER_L0: Pruner = Pruner { half_step_depth: 0, half_step_depth_afte
 pub static PRUNER_L1: Pruner = Pruner { half_step_depth: 2, half_step_depth_after_pawn_moved: 2, half_step_depth_after_check: 2, half_step_depth_after_figure_caught: 2 };
 pub static PRUNER_L2: Pruner = Pruner { half_step_depth: 4, half_step_depth_after_pawn_moved: 4, half_step_depth_after_check: 4, half_step_depth_after_figure_caught: 4 };
 pub static PRUNER_L3: Pruner = Pruner { half_step_depth: 6, half_step_depth_after_pawn_moved: 6, half_step_depth_after_check: 6, half_step_depth_after_figure_caught: 6 };
+pub static PRUNER_1_1_3_3: Pruner = Pruner { half_step_depth: 2, half_step_depth_after_pawn_moved: 3, half_step_depth_after_check: 6, half_step_depth_after_figure_caught: 6 };
 pub static PRUNER_1_2_3_4: Pruner = Pruner { half_step_depth: 2, half_step_depth_after_pawn_moved: 4, half_step_depth_after_check: 6, half_step_depth_after_figure_caught: 8 };
 pub static PRUNER_2_4_5_8: Pruner = Pruner { half_step_depth: 4, half_step_depth_after_pawn_moved: 8, half_step_depth_after_check: 10, half_step_depth_after_figure_caught: 16 };
 pub static PRUNER_3_4_4_6: Pruner = Pruner { half_step_depth: 6, half_step_depth_after_pawn_moved: 8, half_step_depth_after_check: 8, half_step_depth_after_figure_caught: 12 };

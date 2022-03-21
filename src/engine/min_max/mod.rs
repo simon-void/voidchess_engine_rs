@@ -246,7 +246,8 @@ mod tests {
         );
         assert!(
             expected_matcher.matches(&actual_evaluation),
-            format!("actual_eval: {:?}", actual_evaluation),
+            "actual_eval: {:?}",
+            actual_evaluation,
         );
     }
 }

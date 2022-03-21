@@ -194,34 +194,6 @@ impl GameState {
         Ok(game_state)
     }
 
-    pub fn toggle_colors(&self) -> GameState {
-        fn toggle_figures_on_board_to(color: Color, figure_array: [Option<(FigureType, Position)>; 16], board: &mut Board) {
-            for opt_figure_type_and_pos in figure_array.iter() {
-                if let Some((figure_type, pos)) = opt_figure_type_and_pos {
-                    board.set_figure(pos.toggle_row(), Figure{ fig_type: *figure_type, color });
-                } else {
-                    break;
-                }
-            }
-        }
-        let mut toggled_board = Board::empty();
-        let (array_of_opt_white_figures, array_of_opt_black_figures) = self.board.get_white_and_black_figures();
-        toggle_figures_on_board_to(Color::Black, array_of_opt_white_figures, &mut toggled_board);
-        toggle_figures_on_board_to(Color::White, array_of_opt_black_figures, &mut toggled_board);
-
-        return GameState {
-            board: toggled_board,
-            turn_by: self.turn_by.toggle(),
-            white_king_pos: self.black_king_pos.toggle_row(),
-            black_king_pos: self.white_king_pos.toggle_row(),
-            en_passant_intercept_pos: self.en_passant_intercept_pos.map(|pos|{pos.toggle_row()}),
-            is_white_queen_side_castling_still_possible: self.is_black_queen_side_castling_still_possible,
-            is_white_king_side_castling_still_possible: self.is_black_king_side_castling_still_possible,
-            is_black_queen_side_castling_still_possible: self.is_white_queen_side_castling_still_possible,
-            is_black_king_side_castling_still_possible: self.is_white_king_side_castling_still_possible,
-        }
-    }
-
     pub fn do_move(&self, next_move: Move) -> (GameState, MoveStats) {
         debug_assert!(
             next_move.to != self.white_king_pos && next_move.to != self.black_king_pos,
@@ -643,10 +615,39 @@ static BLACK_QUEEN_SIDE_ROOK_STARTING_POS: Position = Position::new_unchecked(0,
 
 #[cfg(test)]
 mod tests {
+    impl GameState {
+        pub fn toggle_colors(&self) -> GameState {
+            fn toggle_figures_on_board_to(color: Color, figure_array: [Option<(FigureType, Position)>; 16], board: &mut Board) {
+                for opt_figure_type_and_pos in figure_array.iter() {
+                    if let Some((figure_type, pos)) = opt_figure_type_and_pos {
+                        board.set_figure(pos.toggle_row(), Figure{ fig_type: *figure_type, color });
+                    } else {
+                        break;
+                    }
+                }
+            }
+            let mut toggled_board = Board::empty();
+            let (array_of_opt_white_figures, array_of_opt_black_figures) = self.board.get_white_and_black_figures();
+            toggle_figures_on_board_to(Color::Black, array_of_opt_white_figures, &mut toggled_board);
+            toggle_figures_on_board_to(Color::White, array_of_opt_black_figures, &mut toggled_board);
+
+            return GameState {
+                board: toggled_board,
+                turn_by: self.turn_by.toggle(),
+                white_king_pos: self.black_king_pos.toggle_row(),
+                black_king_pos: self.white_king_pos.toggle_row(),
+                en_passant_intercept_pos: self.en_passant_intercept_pos.map(|pos|{pos.toggle_row()}),
+                is_white_queen_side_castling_still_possible: self.is_black_queen_side_castling_still_possible,
+                is_white_king_side_castling_still_possible: self.is_black_king_side_castling_still_possible,
+                is_black_queen_side_castling_still_possible: self.is_white_queen_side_castling_still_possible,
+                is_black_king_side_castling_still_possible: self.is_white_king_side_castling_still_possible,
+            }
+        }
+    }
+
     use super::*;
     use rstest::*;
     use crate::game::{GameState};
-    use crate::base::PromotionType;
 
     //♔♕♗♘♖♙♚♛♝♞♜♟
 

@@ -107,15 +107,23 @@ pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Colo
     match latest_move.move_type {
         MoveType::Castling(castling_type) => {
             let castling_rook_end_pos = if castling_type == CastlingType::KingSide {
-                Position::new_unchecked(5, king_pos.row)
+                Position::new_unchecked(5, latest_move.to.row)
             } else {
-                Position::new_unchecked(3, king_pos.row)
+                Position::new_unchecked(3, latest_move.to.row)
             };
+            debug_assert!(!board.is_empty(castling_rook_end_pos), "{}", format!(
+                "board at castling rock pos must contain rook but is empty. expected rook pos: {}, king_pos: {}, latest_move: {}, board: {}",
+                castling_rook_end_pos, king_pos, latest_move, board
+            ));
             if gives_chess(castling_rook_end_pos, king_pos, color, board).is_some() {
                 return true;
             }
         }
         MoveType::EnPassant => {
+            debug_assert!(!board.is_empty(latest_move.to), "{}", format!(
+                "board is empty after enpassent move {} leading to board: {}",
+                latest_move, board
+            ));
             if gives_chess(latest_move.to, king_pos, color, board).is_some() ||
                 find_attack_from_behind(latest_move.from, king_pos, color, board).is_some() {
                 return true;
@@ -126,6 +134,22 @@ pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Colo
             }
         }
         _ => {
+            #[cfg(debug_assertions)]
+            {
+                match board.get_figure(latest_move.to) {
+                    None => assert!(false, "{}", format!(
+                        "to field mustn't be empty after move {} leading to board: {}",
+                        latest_move, board
+                    ).as_str()),
+                    Some(attacker) => {
+                        let king_color = color;
+                        assert_ne!(attacker.color, king_color, "{}", format!(
+                            "possible attacker should be of different color than king, but isn't: attacker pos: {}, latest_move: {}, attacker_type: {:?}, king_pos: {}, king_color: {}, board: {}",
+                            latest_move.to, latest_move, attacker.fig_type, king_pos, king_color, board
+                        ))
+                    }
+                }
+            }
             if gives_chess(latest_move.to, king_pos, color, board).is_some() ||
                 find_attack_from_behind(latest_move.from, king_pos, color, board).is_some() {
                 return true;
@@ -143,7 +167,21 @@ pub enum Attack {
 }
 
 pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color, board: &Board) -> Option<Attack> {
-    debug_assert!(!board.is_empty(attacker_pos), "{}", format!("attacker_pos shouldn't be empty: {}, board: {}", attacker_pos, board));
+    #[cfg(debug_assertions)]
+    {
+        match board.get_figure(attacker_pos) {
+            None => assert!(false, "{}", format!(
+                "attacker_pos shouldn't be empty: {}, king_pos: {}, king_color: {}, board: {}",
+                attacker_pos, king_pos, king_color, board
+            ).as_str()),
+            Some(attacker) => {
+                assert_ne!(attacker.color, king_color, "{}", format!(
+                    "attacker should be of different color than king, but isn't: {}, attacker_type: {:?}, king_pos: {}, king_color: {}, board: {}",
+                    attacker_pos, attacker.fig_type, king_pos, king_color, board
+                ))
+            }
+        }
+    }
     let attacker_type = board.get_figure(attacker_pos).unwrap().fig_type;
     match king_pos.get_direction(attacker_pos) {
         None => {
@@ -298,6 +336,36 @@ mod tests {
         let king_pos = king_pos_config.parse::<Position>().unwrap();
 
         let actual_in_check = is_king_in_check(king_pos, color, &game_state.board);
+        assert_eq!(actual_in_check, expected_is_check);
+    }
+
+    //♔♕♗♘♖♙♚♛♝♞♜♟
+    #[rstest(
+    latest_move_config, color, game_state_config, king_pos_config, expected_is_check,
+    case("e1Cc1", Color::Black, "black ♔c1 ♖d1 ♚e8", "e8", false),
+    case("e1Cc1", Color::Black, "black ♔c1 ♖d1 ♞d8 ♚e8", "e8", false),
+    case("e8Cc8", Color::White, "white ♔e1 ♜d8 ♚c8", "e1", false),
+    case("e8Cc8", Color::White, "white ♘d1 ♔e1 ♜d8 ♚c8", "e1", false),
+    case("e8Cc8", Color::White, "white ♔d1 ♜d8 ♚c8", "d1", true),
+    case("e8cg8", Color::White, "white ♔e1 ♜f8 ♚g8", "e1", false),
+    case("e8cg8", Color::White, "white ♘f1 ♔e1 ♜f8 ♚g8", "e1", false),
+    case("e8cg8", Color::White, "white ♔f1 ♜f8 ♚g8", "f1", true),
+    case("a4eb3", Color::White, "white ♔e1 ♟b3 ♝a5 ♚e8", "e1", true),
+    case("a5eb6", Color::Black, "black ♔e1 ♙b6 ♗a4 ♚e8", "e8", true),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_is_king_in_check_after(
+        latest_move_config: &str,
+        color: Color,
+        game_state_config: &str,
+        king_pos_config: &str,
+        expected_is_check: bool,
+    ) {
+        let latest_move = latest_move_config.parse::<Move>().unwrap();
+        let game_state = game_state_config.parse::<GameState>().unwrap();
+        let king_pos = king_pos_config.parse::<Position>().unwrap();
+
+        let actual_in_check = is_king_in_check_after(latest_move, king_pos, color, &game_state.board);
         assert_eq!(actual_in_check, expected_is_check);
     }
 

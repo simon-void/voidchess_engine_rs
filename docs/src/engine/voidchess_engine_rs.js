@@ -264,7 +264,7 @@ async function init(input) {
         var ret = module;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbg_log_3445347661d4505e = function(arg0) {
+    imports.wbg.__wbg_log_fbd13631356d44e4 = function(arg0) {
         console.log(getObject(arg0));
     };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {

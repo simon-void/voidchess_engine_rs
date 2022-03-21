@@ -1,3 +1,5 @@
+extern crate core;
+
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 use web_sys::console;
@@ -33,7 +35,7 @@ pub fn main_js() -> Result<(), JsValue> {
     Ok(())
 }
 
-static PRUNER: Pruner = PRUNER_2_4_8;
+static PRUNER: Pruner = PRUNER_1_1_3_3;
 
 #[wasm_bindgen]
 pub fn get_greeting_for(name: &str) -> JsValue {
@@ -247,7 +249,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_serialize_deserialise_GameEvaluationResultMoveToPlay() {
+    #[allow(non_snake_case)]
+    fn test_serialize_deserialize_GameEvaluationResultMoveToPlay() {
         let move_to_play_result = GameEvaluationResultMoveToPlay {
             result_type: "MoveToPlay".to_string(),
             move_to_play: "b7-b6".to_string(),
@@ -263,7 +266,8 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialise_GameEvaluationResultMoveToPlay() {
+    #[allow(non_snake_case)]
+    fn test_deserialize_GameEvaluationResultMoveToPlay() {
         let chosen_move = "a2-a4".parse::<Move>().unwrap();
         let eval = MoveEvaluation::Numeric(5.5);
         let fen = "rnbqkbnr/p1pppppp/1p6/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2".to_string();
