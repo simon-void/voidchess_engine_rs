@@ -1,6 +1,7 @@
 mod a_move;
 pub(crate) mod direction;
 mod errors;
+pub(crate) mod list;
 mod position;
 
 pub use a_move::*;
