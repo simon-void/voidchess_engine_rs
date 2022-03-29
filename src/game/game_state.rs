@@ -4,6 +4,7 @@ use crate::game::{Board};
 use crate::figure::functions::check_search::{is_king_in_check, is_king_in_check_after};
 use tinyvec::*;
 use std::{fmt,str};
+use crate::base::rc_list::{RcList};
 use crate::figure::functions::count_reachable::count_reachable_moves;
 use crate::figure::functions::checkmate::is_active_king_checkmate;
 
@@ -18,6 +19,7 @@ pub struct GameState {
     pub is_white_king_side_castling_still_possible: Deactivatable,
     pub is_black_queen_side_castling_still_possible: Deactivatable,
     pub is_black_king_side_castling_still_possible: Deactivatable,
+    moves_played: RcList<Move>,
 }
 
 impl GameState {
@@ -32,6 +34,7 @@ impl GameState {
             is_white_king_side_castling_still_possible: Deactivatable::new(true),
             is_black_queen_side_castling_still_possible: Deactivatable::new(true),
             is_black_king_side_castling_still_possible: Deactivatable::new(true),
+            moves_played: RcList::new(),
         }
     }
 
@@ -189,6 +192,7 @@ impl GameState {
             is_white_king_side_castling_still_possible: is_white_king_side_castling_possible,
             is_black_queen_side_castling_still_possible: is_black_queen_side_castling_possible,
             is_black_king_side_castling_still_possible: is_black_king_side_castling_possible,
+            moves_played: RcList::new(),
         };
 
         Ok(game_state)
@@ -358,6 +362,7 @@ impl GameState {
             is_white_king_side_castling_still_possible: new_is_white_king_side_castling_possible,
             is_black_queen_side_castling_still_possible: new_is_black_queen_side_castling_possible,
             is_black_king_side_castling_still_possible: new_is_black_king_side_castling_possible,
+            moves_played: self.moves_played.append_new(next_move),
         },
          move_stats,
         )
@@ -479,6 +484,13 @@ impl GameState {
             Some(pos) => { fen_part1to4.push_str(format!("{}", pos).as_str());}
         }
         fen_part1to4
+    }
+
+    pub fn get_moves_played(&self) -> String {
+        let debug_format = format!("{:?}", self.moves_played);
+        // remove the embracing '[' and ']'
+        let last_char_index = debug_format.len()-1;
+        (&debug_format[1..last_char_index]).to_string()
     }
 }
 
@@ -641,6 +653,7 @@ mod tests {
                 is_white_king_side_castling_still_possible: self.is_black_king_side_castling_still_possible,
                 is_black_queen_side_castling_still_possible: self.is_white_queen_side_castling_still_possible,
                 is_black_king_side_castling_still_possible: self.is_white_king_side_castling_still_possible,
+                moves_played: self.moves_played.toggle_rows(),
             }
         }
     }
@@ -813,5 +826,21 @@ mod tests {
         let (new_game_state, _) = game_state.do_move(castling_move);
         let actual_updated_board_fen = new_game_state.board.get_fen_part1();
         assert_eq!(actual_updated_board_fen, expected_updated_board_fen);
+    }
+
+    #[rstest(
+    game_config_testing, expected_moves_played,
+    case("", ""),
+    case("e2-e4", "e2-e4"),
+    case("e2-e4 e7-e5 g1-f3", "e2-e4, e7-e5, g1-f3"),
+    ::trace //This leads to the arguments being printed in front of the test result.
+    )]
+    fn test_get_moves_played(
+        game_config_testing: &str,
+        expected_moves_played: &str,
+    ) {
+        let game_state = game_config_testing.parse::<GameState>().unwrap();
+        let actual_moves_played = game_state.get_moves_played();
+        assert_eq!(actual_moves_played, expected_moves_played.to_string(), "moves played");
     }
 }
