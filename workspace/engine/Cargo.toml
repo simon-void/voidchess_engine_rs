@@ -1,0 +1,18 @@
+[package]
+name = "engine_core"
+version = "0.0.1"
+authors = ["StephanS <simon.void+github@gmail.com>"]
+description = "a hobby chess engine and wasm boilerplate"
+license = "MIT"
+repository = "https://github.com/simon-void/voidchess_engine_rs"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = { version = "0.7.3", features = ["stdweb", "wasm-bindgen"] }
+rstest = "0.12.0"
+rstring-builder = "0.1.4"
+#TODO remove serde from this crate
+serde = { version = "1.0.136", features = ["derive"] }
+tinyvec  = { version = "1.5.1", features = ["alloc"] }

@@ -1,5 +1,5 @@
-import init from './engine/voidchess_engine_rs.js';
-import * as wasm from './engine/voidchess_engine_rs.js';
+import init from './engine/voidchess_engine_wasm.js';
+import * as wasm from './engine/voidchess_engine_wasm.js';
 
 let initPromise = init();
 let hasNotBeenInitialized = true;

@@ -1,45 +1,20 @@
-[package]
-name = "voidchess_engine_rs"
-version = "0.0.1"
-authors = ["StephanS <simon.void+github@gmail.com>"]
-description = "a hobby chess engine and wasm boilerplate"
-license = "MIT"
-repository = "https://github.com/simon-void/voidchess_engine_rs"
-edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-crate-type = ["cdylib"]
 
-[features]
-default = ["console_error_panic_hook"]
-
-[dependencies]
-rand = { version = "0.7.3", features = ["stdweb", "wasm-bindgen"] }
-rstest = "0.12.0"
-rstring-builder = "0.1.4"
-serde = { version = "1.0.136", features = ["derive"] }
-serde_json = "1.0.79"
-tinyvec  = { version = "1.5.1", features = ["alloc"] }
-wasm-bindgen = "0.2.79"
-
-# The `console_error_panic_hook` crate provides better debugging of panics by
-# logging them with `console.error`. This is great for development, but requires
-# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
-# code size when deploying.
-# So it's included by default (see [features] section),
-# but excluded in release build (see wasm-pack-and-copy-over_release shell script)
-console_error_panic_hook = { version = "0.1.7", optional = true }
-
-# The `web-sys` crate allows you to interact with the various browser APIs,
-# like the DOM.
-[dependencies.web-sys]
-version = "0.3.56"
-features = ["console"]
+[workspace]
+members = [
+    "workspace/engine",
+    "workspace/wasm",
+]
 
 [profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
+# opt-level valid options are:
+#    0: no optimizations
+#    1: basic optimizations
+#    2: some optimizations
+#    3: all optimizations
+#    "s": optimize for binary size
+#    "z": optimize for binary size, but also turn off loop vectorization.
+opt-level = 3
 
 [profile.dev]
 incremental = true

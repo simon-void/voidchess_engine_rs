@@ -12,6 +12,7 @@ struct Node<T> {
     next: Link<T>,
 }
 
+#[allow(dead_code)]
 impl<T> RcList<T> {
 
     pub fn new() -> Self {

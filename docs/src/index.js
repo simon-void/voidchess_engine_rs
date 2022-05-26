@@ -1,4 +1,4 @@
-import init, * as wasm from './engine/voidchess_engine_rs.js';
+import init, * as wasm from './engine/voidchess_engine_wasm.js';
 import {evaluateGame} from './worker_pool.js';
 import {Chessboard, INPUT_EVENT_TYPE, MOVE_INPUT_MODE} from "./cm-chessboard/Chessboard.js"
 
