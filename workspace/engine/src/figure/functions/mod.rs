@@ -3,4 +3,4 @@ pub(crate) mod checkmate;
 pub(crate) mod reachable;
 pub(crate) mod count_reachable;
 mod castling;
-pub(crate) mod allowed;
+pub mod allowed;

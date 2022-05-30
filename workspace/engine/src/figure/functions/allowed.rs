@@ -1,6 +1,5 @@
 use crate::base::{Move, MoveType, PromotionType};
-use crate::Game;
-use crate::game::{MoveResult, StoppedReason};
+use crate::game::{Game, MoveResult, StoppedReason};
 
 pub fn get_allowed_moves(game_config: &str) -> Vec<Move> {
     let mut movable_moves: Vec<Move> = vec!();

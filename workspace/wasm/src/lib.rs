@@ -6,11 +6,6 @@ use serde::{Serialize, Deserialize};
 use web_sys::console;
 use std::collections::HashMap;
 
-// mod figure;
-// mod base;
-// mod game;
-// mod engine;
-
 pub use crate::game::{Game};
 pub use crate::engine::evaluate;
 pub use crate::figure::functions::allowed::get_allowed_moves;

@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use crate::base::Move;
 use crate::engine::evaluations::frontend::MoveEvaluation;
 
-pub(crate) mod frontend;
+pub mod frontend;
 pub(crate) mod testing;
 
 #[derive(Debug, Copy, Clone, PartialEq)]

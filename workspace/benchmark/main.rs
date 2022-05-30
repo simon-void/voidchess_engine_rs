@@ -1,4 +1,4 @@
-// use voidchess_engine_rs::*;
+use engine_core::*;
 
 fn main() {
     println!("Hello VoidChess");

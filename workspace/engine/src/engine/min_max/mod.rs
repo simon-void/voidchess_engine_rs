@@ -4,7 +4,7 @@ use crate::base::{Color, Move, Moves};
 use crate::engine::static_eval::{static_eval, StaticEvalType};
 use crate::engine::min_max::pruner::Pruner;
 
-pub(crate) mod pruner;
+pub mod pruner;
 
 pub fn evaluate_move(
     old_game: &Game,

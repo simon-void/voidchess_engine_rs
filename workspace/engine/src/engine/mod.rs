@@ -7,8 +7,8 @@ use crate::base::{ErrorKind, Move};
 use crate::engine::evaluations::frontend::*;
 use crate::engine::min_max::pruner::*;
 
-pub(crate) mod evaluations;
-pub(crate) mod min_max;
+pub mod evaluations;
+pub mod min_max;
 mod static_eval;
 
 pub fn evaluate_single_move(game_config: &str, next_move: Move, pruner: Pruner) -> GameEvaluation {
@@ -94,7 +94,7 @@ pub fn choose_next_move(mut evaluated_moves: Vec<EvaluatedMove>) -> EvaluatedMov
         None => { return chosen_move; }
         Some(num_eval) => { num_eval }
     };
-    let mut random = rand::thread_rng();
+    let mut random = thread_rng();
     loop {
         if random.gen::<f32>() < 0.7 {
             break;
