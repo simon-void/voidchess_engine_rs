@@ -1,21 +1,17 @@
 {
-  "name": "voidchess_engine_rs",
-  "collaborators": [
-    "StephanS <simon.void+github@gmail.com>"
-  ],
-  "description": "a hobby chess engine and wasm boilerplate",
-  "version": "0.0.1",
-  "license": "MIT",
+  "name": "voidchess_engine_wasm",
+  "description": "PoC of splitting Rust code to be compiled to wasm into workspaces",
+  "version": "0.1.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/simon-void/voidchess_engine_rs"
+    "url": "https://github.com/simon-void/wasm_from_rust_workspaces"
   },
   "files": [
-    "voidchess_engine_rs_bg.wasm",
-    "voidchess_engine_rs.js",
-    "voidchess_engine_rs.d.ts"
+    "voidchess_engine_wasm_bg.wasm",
+    "voidchess_engine_wasm.js",
+    "voidchess_engine_wasm.d.ts"
   ],
-  "module": "voidchess_engine_rs.js",
-  "types": "voidchess_engine_rs.d.ts",
+  "module": "voidchess_engine_wasm.js",
+  "types": "voidchess_engine_wasm.d.ts",
   "sideEffects": false
 }
