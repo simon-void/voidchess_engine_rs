@@ -1,20 +1,22 @@
 extern crate core;
+
+use std::collections::HashMap;
+use std::convert::{From, Into};
+
+use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
+use web_sys::console;
+
 use engine_core::*;
 
-use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
-use web_sys::console;
-use std::collections::HashMap;
-
-pub use crate::game::{Game};
+use crate::base::Move;
+use crate::engine::{choose_next_move, evaluate_single_move};
 pub use crate::engine::evaluate;
-pub use crate::figure::functions::allowed::get_allowed_moves;
-pub use crate::engine::min_max::pruner::*;
-use crate::base::{Move};
-use crate::engine::evaluations::frontend::{GameEvaluation, GameEndResult, MoveEvaluation};
 use crate::engine::evaluations::{DrawReason, EvaluatedMove};
-use crate::engine::{evaluate_single_move, choose_next_move};
-
+use crate::engine::evaluations::frontend::{GameEndResult, GameEvaluation, MoveEvaluation};
+pub use crate::engine::min_max::pruner::*;
+pub use crate::figure::functions::allowed::get_allowed_moves;
+pub use crate::game::Game;
 
 // This is like the `main` function, except for JavaScript.
 #[wasm_bindgen(start)]
@@ -114,7 +116,7 @@ fn eval_to_json(game_eval: GameEvaluation, game_config: &str) -> String {
 }
 
 fn move_to_play_to_json(chosen_move: Move, eval: MoveEvaluation, fen: String) -> String {
-    let eval_string = serde_json::to_string(&eval).unwrap();
+    let eval_string = serde_json::to_string(&SerializableMoveEvaluation::from(eval)).unwrap();
     let result = GameEvaluationResultMoveToPlay {
         result_type: "MoveToPlay".to_string(),
         move_to_play: chosen_move.to_string(),
@@ -216,7 +218,7 @@ pub fn pick_move_to_play(game_eval_result_array_str: &str) -> JsValue {
             GameEvaluationResult::EndOrErr(_) => {panic!("only MoveToPlay expected at this point")}
             GameEvaluationResult::MoveToPlay(type4) => {
                 let move_played:Move = type4.move_to_play.parse().unwrap();
-                let eval: MoveEvaluation = serde_json::from_str(type4.eval.as_str()).unwrap();
+                let eval: MoveEvaluation = serde_json::from_str::<SerializableMoveEvaluation>(type4.eval.as_str()).unwrap().into();
                 let fen = type4.fen.as_str();
                 fen_by_move.insert(move_played, fen);
                 EvaluatedMove {
@@ -234,6 +236,66 @@ pub fn pick_move_to_play(game_eval_result_array_str: &str) -> JsValue {
     console::log_1(&JsValue::from_str(format!("json of the picked gameEval: {}", json).as_str()));
 
     JsValue::from_str(json.as_str())
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum SerializableDrawReason {
+    StaleMate,
+    InsufficientMaterial,
+    ThreeTimesRepetition,
+    NoChangeIn50Moves,
+}
+
+impl From<DrawReason> for SerializableDrawReason {
+    fn from(item: DrawReason) -> Self {
+        match item {
+            DrawReason::StaleMate => SerializableDrawReason::StaleMate,
+            DrawReason::InsufficientMaterial => SerializableDrawReason::InsufficientMaterial,
+            DrawReason::ThreeTimesRepetition => SerializableDrawReason::ThreeTimesRepetition,
+            DrawReason::NoChangeIn50Moves => SerializableDrawReason::NoChangeIn50Moves,
+        }
+    }
+}
+
+impl Into<DrawReason> for SerializableDrawReason {
+    fn into(self) -> DrawReason {
+        match self {
+            SerializableDrawReason::StaleMate => DrawReason::StaleMate,
+            SerializableDrawReason::InsufficientMaterial => DrawReason::InsufficientMaterial,
+            SerializableDrawReason::ThreeTimesRepetition => DrawReason::ThreeTimesRepetition,
+            SerializableDrawReason::NoChangeIn50Moves => DrawReason::NoChangeIn50Moves,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum SerializableMoveEvaluation {
+    EngineCheckMatesIn(u8),
+    Numeric(f32),
+    Draw(SerializableDrawReason),
+    EngineGetsCheckMatedIn(u8, f32),
+}
+
+impl From<MoveEvaluation> for SerializableMoveEvaluation {
+    fn from(item: MoveEvaluation) -> Self {
+        match item {
+            MoveEvaluation::EngineCheckMatesIn(count) => SerializableMoveEvaluation::EngineCheckMatesIn(count),
+            MoveEvaluation::Numeric(value) => SerializableMoveEvaluation::Numeric(value),
+            MoveEvaluation::Draw(reason) => SerializableMoveEvaluation::Draw(reason.into()),
+            MoveEvaluation::EngineGetsCheckMatedIn(count, value) => SerializableMoveEvaluation::EngineGetsCheckMatedIn(count, value),
+        }
+    }
+}
+
+impl Into<MoveEvaluation> for SerializableMoveEvaluation {
+    fn into(self) -> MoveEvaluation {
+        match self {
+            SerializableMoveEvaluation::EngineCheckMatesIn(count) => MoveEvaluation::EngineCheckMatesIn(count),
+            SerializableMoveEvaluation::Numeric(value) => MoveEvaluation::Numeric(value),
+            SerializableMoveEvaluation::Draw(reason) => MoveEvaluation::Draw(reason.into()),
+            SerializableMoveEvaluation::EngineGetsCheckMatedIn(count, value) => MoveEvaluation::EngineGetsCheckMatedIn(count, value),
+        }
+    }
 }
 
 
@@ -277,7 +339,7 @@ mod tests {
             deserialized.fen,
             "rnbqkbnr/p1pppppp/1p6/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2".to_string(),
         );
-        let deserialized_move_eval: MoveEvaluation = serde_json::from_str(deserialized.eval.as_str()).unwrap();
+        let deserialized_move_eval: MoveEvaluation = serde_json::from_str::<SerializableMoveEvaluation>(deserialized.eval.as_str()).unwrap().into();
         assert_eq!(
             deserialized_move_eval,
             MoveEvaluation::Numeric(5.5),

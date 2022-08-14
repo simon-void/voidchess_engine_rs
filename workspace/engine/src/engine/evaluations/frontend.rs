@@ -1,5 +1,3 @@
-use serde::{Serialize, Deserialize};
-
 use super::*;
 use crate::engine::evaluations::frontend::MoveEvaluation::*;
 use crate::engine::evaluations::frontend::GameEvaluation::*;
@@ -24,7 +22,7 @@ pub enum GameEndResult {
  * since either the Engine already lost, in which case GameEnded(EngineLost) will be returned or
  * the opponent still has to play the mating move, so EngineGetsCheckMatedIn(1) is appropriate.
  */
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone)]
 pub enum MoveEvaluation {
     EngineCheckMatesIn(u8),
     Numeric(f32),

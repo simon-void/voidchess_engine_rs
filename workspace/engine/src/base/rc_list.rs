@@ -117,7 +117,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
 #[cfg(test)]
 mod test {
-    use crate::Move;
+    use crate::base::Move;
     use super::RcList;
 
     impl RcList<Move> {

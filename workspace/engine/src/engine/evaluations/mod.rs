@@ -1,5 +1,3 @@
-use serde::{Serialize, Deserialize};
-
 use std::cmp::Ordering;
 use crate::base::Move;
 use crate::engine::evaluations::frontend::MoveEvaluation;
@@ -15,7 +13,7 @@ pub enum Evaluation {
     LoseIn(u8, f32),
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum DrawReason {
     StaleMate,
     InsufficientMaterial,

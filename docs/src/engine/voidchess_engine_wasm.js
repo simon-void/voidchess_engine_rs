@@ -230,9 +230,6 @@ async function init(input) {
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
     };
-    imports.wbg.__wbg_log_e8ba7b992c7ad0eb = function(arg0) {
-        console.log(getObject(arg0));
-    };
     imports.wbg.__wbg_randomFillSync_d2ba53160aec6aba = function(arg0, arg1, arg2) {
         getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
     };
@@ -266,6 +263,9 @@ async function init(input) {
     imports.wbg.__wbg_getRandomValues_dd27e6b0652b3236 = function(arg0) {
         const ret = getObject(arg0).getRandomValues;
         return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_log_e8ba7b992c7ad0eb = function(arg0) {
+        console.log(getObject(arg0));
     };
     imports.wbg.__wbg_buffer_7af23f65f6c64548 = function(arg0) {
         const ret = getObject(arg0).buffer;
