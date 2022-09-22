@@ -17,18 +17,10 @@ impl EvaluationMatcher {
     pub fn matches(&self, eval: &Evaluation) -> bool {
         match self {
             EvaluationMatcher::WinIn => {
-                if let Evaluation::WinIn(_) = eval {
-                    true
-                } else {
-                    false
-                }
+                matches!(eval, Evaluation::WinIn(_))
             }
             EvaluationMatcher::AnyNumeric => {
-                if let Evaluation::Numeric(_) = eval {
-                    true
-                } else {
-                    false
-                }
+                matches!(eval, Evaluation::Numeric(_))
             }
             EvaluationMatcher::PositiveNumeric => {
                 if let Evaluation::Numeric(num_eval) = eval {
@@ -52,11 +44,7 @@ impl EvaluationMatcher {
                 }
             }
             EvaluationMatcher::LoseIn => {
-                if let Evaluation::LoseIn(_, _) = eval {
-                    true
-                } else {
-                    false
-                }
+                matches!(eval, Evaluation::LoseIn(_, _))
             }
         }
     }
@@ -83,11 +71,7 @@ impl MoveEvaluationMatcher {
                 }
             }
             MoveEvaluationMatcher::AnyNumeric => {
-                if let MoveEvaluation::Numeric(_) = move_eval {
-                    true
-                } else {
-                    false
-                }
+                matches!(move_eval, MoveEvaluation::Numeric(_))
             }
             MoveEvaluationMatcher::PositiveNumeric => {
                 if let MoveEvaluation::Numeric(num_eval) = move_eval {
@@ -146,11 +130,7 @@ impl GameEvaluationMatcher {
                 }
             }
             GameEvaluationMatcher::Err => {
-                if let GameEvaluation::Err(_) = game_eval {
-                    true
-                } else {
-                    false
-                }
+                matches!(game_eval, GameEvaluation::Err(_))
             }
         }
     }

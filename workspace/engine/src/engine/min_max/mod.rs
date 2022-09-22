@@ -15,31 +15,37 @@ pub fn evaluate_move(
     eval_type: StaticEvalType,
 ) -> Evaluation {
     get_min_after(
-        old_game,
+        OldGameData {
+            old_game,
+            old_half_step: 0,
+            was_check: false,
+            old_move_stats: MoveStats::default(),
+        },
         a_move,
-        0,
-        false,
         pruner,
-        MoveStats::default(),
         evaluate_for,
         current_max_one_level_up,
         eval_type,
     )
 }
 
-fn get_max_after(
-    old_game: &Game,
-    a_move: Move,
+struct OldGameData<'a> {
+    old_game: &'a Game,
     old_half_step: usize,
     was_check: bool,
-    pruner: Pruner,
     old_move_stats: MoveStats,
+}
+
+fn get_max_after(
+    old_game_data: OldGameData,
+    a_move: Move,
+    pruner: Pruner,
     evaluate_for: Color,
     current_min_one_level_up: Evaluation,
     eval_type: StaticEvalType
 ) -> Evaluation {
-    let move_result = old_game.play(a_move);
-    let new_half_step = old_half_step + 1;
+    let move_result = old_game_data.old_game.play(a_move);
+    let new_half_step = old_game_data.old_half_step + 1;
 
     debug_assert!(new_half_step%2==0, "get_min's new_half_step is supposed to be even, but was {}", new_half_step);
 
@@ -54,7 +60,7 @@ fn get_max_after(
         }
         MoveResult::Ongoing(game, move_stats) => {
             let is_check = game.is_active_king_in_check();
-            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats, is_check, was_check) {
+            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_game_data.old_move_stats, is_check, old_game_data.was_check) {
                 return if game.is_active_king_checkmate() {
                     get_lose_eval(game.get_game_state(), new_half_step + 1, evaluate_for, eval_type)
                 } else {
@@ -65,12 +71,14 @@ fn get_max_after(
             let mut current_max = MIN_EVALUATION;
             for next_move in scramble(moves).iter() {
                 let eval = get_min_after(
-                    &game,
+                    OldGameData {
+                        old_game: &game,
+                        old_half_step: new_half_step,
+                        was_check: is_check,
+                        old_move_stats: move_stats,
+                    },
                     *next_move,
-                    new_half_step,
-                    is_check,
                     pruner,
-                    move_stats,
                     evaluate_for,
                     current_max,
                     eval_type
@@ -93,28 +101,25 @@ fn get_max_after(
 }
 
 fn get_min_after(
-    old_game: &Game,
+    old_game_data: OldGameData,
     a_move: Move,
-    old_half_step: usize,
-    was_check: bool,
     pruner: Pruner,
-    old_move_stats: MoveStats,
     evaluate_for: Color,
     current_max_one_level_up: Evaluation,
     eval_type: StaticEvalType
 ) -> Evaluation {
-    let move_result = old_game.play(a_move);
-    let new_half_step = old_half_step + 1;
+    let move_result = old_game_data.old_game.play(a_move);
+    let new_half_step = old_game_data.old_half_step + 1;
 
     debug_assert!(new_half_step%2==1, "get_max's new_half_step is supposed to be odd, but was {}", new_half_step);
 
     return match move_result {
         MoveResult::Stopped(reason, final_game_state) => {
-            get_min_after_stopped_eval(reason, final_game_state, new_half_step, evaluate_for, eval_type)
+            get_min_after_stopped_eval(reason, *final_game_state, new_half_step, evaluate_for, eval_type)
         }
         MoveResult::Ongoing(game, move_stats) => {
             let is_check = game.is_active_king_in_check();
-            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_move_stats, is_check, was_check) {
+            if pruner.should_stop_min_max_ing(new_half_step, move_stats, old_game_data.old_move_stats, is_check, old_game_data.was_check) {
                 return if game.is_active_king_checkmate() {
                     Evaluation::WinIn((new_half_step + 1) as u8)
                 } else {
@@ -125,12 +130,14 @@ fn get_min_after(
             let mut current_min = MAX_EVALUATION;
             for next_move in scramble(moves).iter() {
                 let eval = get_max_after(
-                    &game,
+                    OldGameData {
+                        old_game: &game,
+                        old_half_step: new_half_step,
+                        was_check: is_check,
+                        old_move_stats: move_stats,
+                    },
                     *next_move,
-                    new_half_step,
-                    is_check,
                     pruner,
-                    move_stats,
                     evaluate_for,
                     current_min,
                     eval_type

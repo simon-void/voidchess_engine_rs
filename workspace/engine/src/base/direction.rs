@@ -30,17 +30,11 @@ impl Direction {
     }
 
     pub fn is_straight(&self) -> bool {
-        match self {
-            Direction::Up | Direction::Down | Direction::Left | Direction::Right => true,
-            _ => false,
-        }
+        matches!(self, Direction::Up | Direction::Down | Direction::Left | Direction::Right)
     }
 
     pub fn is_diagonal(&self) -> bool {
-        match self {
-            Direction::Up | Direction::Down | Direction::Left | Direction::Right => false,
-            _ => true,
-        }
+        matches!(self, Direction::UpLeft | Direction::UpRight | Direction::DownLeft | Direction::DownRight)
     }
 }
 

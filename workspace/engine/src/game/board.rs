@@ -22,6 +22,9 @@ static BLACK_BISHOP: Figure = Figure {fig_type:FigureType::Bishop, color: Color:
 static BLACK_QUEEN: Figure = Figure {fig_type:FigureType::Queen, color: Color::Black,};
 static BLACK_KING: Figure = Figure {fig_type:FigureType::King, color: Color::Black,};
 
+
+pub type FiguresWithPosArray = [Option<(FigureType, Position)>; 16];
+
 #[derive(Clone, Debug)]
 pub struct Board {
     state: [Option<Figure>; 64],
@@ -84,9 +87,9 @@ impl Board {
         figures
     }
 
-    pub fn get_white_and_black_figures(&self) -> ([Option<(FigureType, Position)>; 16],[Option<(FigureType, Position)>; 16]) {
-        let mut white_figures: [Option<(FigureType, Position)>; 16] = [None; 16];
-        let mut black_figures: [Option<(FigureType, Position)>; 16] = [None; 16];
+    pub fn get_white_and_black_figures(&self) -> (FiguresWithPosArray, FiguresWithPosArray) {
+        let mut white_figures: FiguresWithPosArray = [None; 16];
+        let mut black_figures: FiguresWithPosArray = [None; 16];
         let mut next_white_index: usize = 0;
         let mut next_black_index: usize = 0;
 
@@ -132,7 +135,7 @@ impl Board {
     }
 
     pub fn clear_field(&mut self, pos: Position) {
-        self.number_of_figures = self.number_of_figures - 1;
+        self.number_of_figures -= 1;
         self.state[pos.index] = None;
     }
 
@@ -245,9 +248,9 @@ impl Board {
         }
         fn encode_figure_slice(slice_of_16_figures: &[Option<Figure>]) -> u64 {
             let mut opt_fig_iter: Iter<Option<Figure>> = slice_of_16_figures.iter();
-            let mut slice_compacted = opt_fig_iter.next().map(|it| encode_opt_figure(it)).unwrap_or(0);
+            let mut slice_compacted = opt_fig_iter.next().map(encode_opt_figure).unwrap_or(0);
             for next_opt_fig in opt_fig_iter {
-                slice_compacted = slice_compacted << 4;
+                slice_compacted <<= 4;
                 slice_compacted += encode_opt_figure(next_opt_fig);
             }
             slice_compacted

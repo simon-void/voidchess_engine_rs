@@ -14,10 +14,10 @@ pub struct Move {
     pub move_type: MoveType,
 }
 
+#[allow(clippy::derive_hash_xor_eq)]
 impl Hash for Move {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_usize(self.from.index);
-        state.write_usize(self.to.index);
+        state.write_usize((self.from.index<< 6) + self.to.index);
     }
 }
 
@@ -31,7 +31,7 @@ impl Move {
     }
 
     pub fn from_code(code: &str) -> Move {
-        code.parse::<Move>().expect(format!("illegal Move code: {}", code).as_str())
+        code.parse::<Move>().unwrap_or_else(|_| panic!("illegal Move code: {}", code))
     }
 
     pub fn toggle_rows(&self) -> Move {
@@ -56,7 +56,7 @@ impl str::FromStr for Move {
 }
 
 impl fmt::Display for Move {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}{}", self.from, self.move_type, self.to)
     }
 }
@@ -153,7 +153,7 @@ impl str::FromStr for MoveType {
 }
 
 impl fmt::Display for MoveType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let code = match self {
             MoveType::Normal => "-",
             MoveType::PawnPromotion(PromotionType::Queen) => "Q",

@@ -58,7 +58,7 @@ impl Position {
     }
 
     pub fn from_code(code: &str) -> Position {
-        code.parse::<Position>().expect(format!("illegal Position code: {}", code).as_str())
+        code.parse::<Position>().unwrap_or_else(|_| panic!("illegal Position code: {}", code))
     }
 
     pub fn get_row_distance(&self, other: Position) -> i8 {
@@ -176,7 +176,7 @@ impl Position {
     }
 
     pub fn is_on_ground_row(&self, color: Color) -> bool {
-        return match color {
+        match color {
             Color::Black if self.row == 7 => true,
             Color::White if self.row == 0 => true,
             _ => false,
@@ -190,7 +190,7 @@ impl Position {
     }
 
     pub fn toggle_row(&self) -> Position {
-        return Position::new_unchecked(
+        Position::new_unchecked(
             self.column, 7-self.row,
         )
     }
@@ -218,18 +218,16 @@ impl Position {
         if row_diff.abs() != column_diff.abs() {
             return None;
         }
-        return if row_diff.is_positive() {
+        if row_diff.is_positive() {
             if column_diff.is_positive() {
                 Some(Direction::UpRight)
             } else {
                 Some(Direction::UpLeft)
             }
+        } else if column_diff.is_positive() {
+            Some(Direction::DownRight)
         } else {
-            if column_diff.is_positive() {
-                Some(Direction::DownRight)
-            } else {
-                Some(Direction::DownLeft)
-            }
+            Some(Direction::DownLeft)
         }
     }
 }
@@ -262,10 +260,6 @@ impl str::FromStr for Position {
 impl PartialEq for Position {
     fn eq(&self, other: &Self) -> bool {
         self.index==other.index
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.index!=other.index
     }
 }
 
@@ -375,13 +369,13 @@ impl Iterator for KnightPosIterator<'_> {
                 _ => panic!("index should lie between [0,7] but is {}", self.index)
             };
             self.index += 1;
-            let opt_pos = opt_pos.map(|pos|{
+            let opt_pos = opt_pos.and_then(|pos|{
                 let field_content = self.board.get_content_type(pos, self.knight_color);
                 match field_content {
                     FieldContent::OwnFigure => None,
                     _ => Some(pos)
                 }
-            }).flatten();
+            });
             if opt_pos.is_some() {
                 return opt_pos;
             }

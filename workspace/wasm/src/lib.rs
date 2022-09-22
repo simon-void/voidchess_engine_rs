@@ -179,7 +179,7 @@ pub fn pick_move_to_play(game_eval_result_array_str: &str) -> JsValue {
     console::log_1(&JsValue::from_str(format!("pick_move_to_play param: {}", game_eval_result_array_str).as_str()));
 
     let game_eval_results: Vec<GameEvaluationResult> = game_eval_result_array_str.split('|').map(|result_str|{
-        let result = match serde_json::from_str::<GameEvaluationResultMoveToPlay>(result_str) {
+        match serde_json::from_str::<GameEvaluationResultMoveToPlay>(result_str) {
             Ok(move_to_play_result) => {
                 GameEvaluationResult::MoveToPlay(move_to_play_result)
             }
@@ -193,8 +193,7 @@ pub fn pick_move_to_play(game_eval_result_array_str: &str) -> JsValue {
                     }
                 }
             }
-        };
-        result
+        }
     }).collect();
 
     // let game_eval_results: Vec<GameEvaluationResult> = serde_json::from_str(game_eval_result_array_str).unwrap();
@@ -257,9 +256,9 @@ impl From<DrawReason> for SerializableDrawReason {
     }
 }
 
-impl Into<DrawReason> for SerializableDrawReason {
-    fn into(self) -> DrawReason {
-        match self {
+impl From<SerializableDrawReason> for DrawReason {
+    fn from(reason: SerializableDrawReason) -> Self {
+        match reason {
             SerializableDrawReason::StaleMate => DrawReason::StaleMate,
             SerializableDrawReason::InsufficientMaterial => DrawReason::InsufficientMaterial,
             SerializableDrawReason::ThreeTimesRepetition => DrawReason::ThreeTimesRepetition,
@@ -287,9 +286,9 @@ impl From<MoveEvaluation> for SerializableMoveEvaluation {
     }
 }
 
-impl Into<MoveEvaluation> for SerializableMoveEvaluation {
-    fn into(self) -> MoveEvaluation {
-        match self {
+impl From<SerializableMoveEvaluation> for MoveEvaluation {
+    fn from(evaluation: SerializableMoveEvaluation) -> Self {
+        match evaluation {
             SerializableMoveEvaluation::EngineCheckMatesIn(count) => MoveEvaluation::EngineCheckMatesIn(count),
             SerializableMoveEvaluation::Numeric(value) => MoveEvaluation::Numeric(value),
             SerializableMoveEvaluation::Draw(reason) => MoveEvaluation::Draw(reason.into()),

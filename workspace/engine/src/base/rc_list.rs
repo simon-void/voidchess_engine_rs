@@ -85,9 +85,7 @@ impl<T> Debug for RcList<T> where T: Debug {
 impl<T> Clone for RcList<T> where T: Clone {
     fn clone(&self) -> Self {
         RcList::<T> {
-            head: self.head.as_ref().map(|rc|{
-                rc.clone()
-            })
+            head: self.head.as_ref().cloned()
         }
     }
 }

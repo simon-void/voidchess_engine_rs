@@ -13,13 +13,13 @@ pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_stat
     let attack_situation = get_attack_situation(king_pos, king_color, game_state, after_move);
 
     match attack_situation {
-        AttackSituation::NoAttacker => {false}
-        AttackSituation::OneAttacker(attack) => {is_active_king_checkmate_from_attack(attack, king_pos, king_color, game_state)}
-        AttackSituation::TwoAttacker => {can_king_move_without_being_in_check(king_pos, king_color, &game_state.board)}
+        AttackerNumber::Zero => {false}
+        AttackerNumber::One(attack) => {is_active_king_checkmate_from_attack(attack, king_pos, king_color, game_state)}
+        AttackerNumber::Two => {can_king_move_without_being_in_check(king_pos, king_color, &game_state.board)}
     }
 }
 
-fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> AttackSituation {
+fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> AttackerNumber {
     match after_move.move_type {
         MoveType::Castling(castling_type) => {
             let rock_row = if game_state.turn_by==Color::White {
@@ -33,9 +33,9 @@ fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &Game
                 Position::new_unchecked(3, rock_row)
             };
             if let Some(attack) = gives_chess(castling_rook_end_pos, king_pos, king_color, &game_state.board) {
-                AttackSituation::OneAttacker(attack)
+                AttackerNumber::One(attack)
             } else {
-                AttackSituation::NoAttacker
+                AttackerNumber::Zero
             }
         }
         MoveType::EnPassant => {
@@ -45,17 +45,17 @@ fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &Game
                 None => {
                     let taken_pawn_pos: Position = Position::new_unchecked(after_move.to.column, after_move.from.row);
                     let is_check_from_behind_taken_pawn = find_attack_from_behind(taken_pawn_pos, king_pos, king_color, &game_state.board);
-                    AttackSituation::from_two_possibilities(is_check_from_behind_start_pos, is_check_from_behind_taken_pawn)
+                    AttackerNumber::from_two_possibilities(is_check_from_behind_start_pos, is_check_from_behind_taken_pawn)
                 }
                 Some(_) => {
-                    AttackSituation::from_two_possibilities(is_check_from_behind_start_pos, is_check_from_end_pos)
+                    AttackerNumber::from_two_possibilities(is_check_from_behind_start_pos, is_check_from_end_pos)
                 }
             }
         }
         _ => {
             let is_check_from_end_pos = gives_chess(after_move.to, king_pos, king_color, &game_state.board);
             let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from, king_pos, king_color, &game_state.board);
-            AttackSituation::from_two_possibilities(is_check_from_end_pos, is_check_from_behind_start_pos)
+            AttackerNumber::from_two_possibilities(is_check_from_end_pos, is_check_from_behind_start_pos)
         }
     }
 }
@@ -170,32 +170,32 @@ fn can_king_move_without_being_in_check(king_pos: Position, king_color: Color, b
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum AttackSituation {
-    NoAttacker,
-    OneAttacker(Attack),
-    TwoAttacker,
+enum AttackerNumber {
+    Zero,
+    One(Attack),
+    Two,
 }
 
-impl AttackSituation {
-    fn from_two_possibilities(opt_attack1: Option<Attack>, opt_attack2: Option<Attack>) -> AttackSituation {
+impl AttackerNumber {
+    fn from_two_possibilities(opt_attack1: Option<Attack>, opt_attack2: Option<Attack>) -> AttackerNumber {
         match opt_attack1 {
             None => {
                 match opt_attack2 {
                     None => {
-                        AttackSituation::NoAttacker
+                        AttackerNumber::Zero
                     }
                     Some(attack2) => {
-                        AttackSituation::OneAttacker(attack2)
+                        AttackerNumber::One(attack2)
                     }
                 }
             }
             Some(attack1) => {
                 match opt_attack2 {
                     None => {
-                        AttackSituation::OneAttacker(attack1)
+                        AttackerNumber::One(attack1)
                     }
                     Some(_) => {
-                        AttackSituation::TwoAttacker
+                        AttackerNumber::Two
                     }
                 }
             }
@@ -368,27 +368,27 @@ mod tests {
     //♔♕♗♘♖♙♚♛♝♞♜♟
     #[rstest(
     game_state_config, move_config, expected_attack_situation,
-    case("e2-e4 e7-e5", "d1-h5", AttackSituation::NoAttacker),
-    case("e2-e4 f7-f5", "d1-h5", AttackSituation::OneAttacker(Attack::OnLine(Direction::DownRight, 3))),
-    case("e2-e4 e7-e5 f1-c4 d7-d6 d1-f3 c7-c5", "f3-f7", AttackSituation::OneAttacker(Attack::OnLine(Direction::DownRight, 1))),
-    case("white ♔e1 ♖a7 ♖b7 ♚e8", "a7-a8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Left, 4))),
-    case("white ♔e1 ♕a1 ♚b8", "a1-a8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Left, 1))),
-    case("white ♔e1 ♕a1 ♚c8", "a1-a8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Left, 2))),
-    case("white ♔e1 ♕a1 ♚b8", "a1-a7", AttackSituation::OneAttacker(Attack::OnLine(Direction::DownLeft, 1))),
-    case("black ♔f1 ♖e1 ♖g1 ♙e2 ♙g2 ♚e8 ♜h8", "e8cg8", AttackSituation::OneAttacker(Attack::OnLine(Direction::Up, 7))),
-    case("black ♔f1 Eb3 ♙b4 ♟c4 ♚e8 ♝a6", "c4eb3", AttackSituation::OneAttacker(Attack::OnLine(Direction::UpLeft, 5))),
-    case("black ♔c2 Eb3 ♙b4 ♟c4 ♚e8", "c4eb3", AttackSituation::OneAttacker(Attack::ByPawn("b3".parse::<Position>().unwrap()))),
-    case("black ♔e1 ♝a2 ♞a1 ♚e8", "a1-c2", AttackSituation::OneAttacker(Attack::ByKnight("c2".parse::<Position>().unwrap()))),
-    case("black ♔f1 ♜a1 ♞b1 ♚e8", "b1-d2", AttackSituation::TwoAttacker),
-    case("black ♔f1 ♜a1 ♝b1 ♚e8", "b1-d3", AttackSituation::TwoAttacker),
-    case("black ♔c2 Eb3 ♙b4 ♟c4 ♜c5 ♚e8", "c4eb3", AttackSituation::TwoAttacker),
-    case("black ♔c3 Eb3 ♙b4 ♟c4 ♜c5 ♝a5 ♚e8", "c4eb3", AttackSituation::TwoAttacker),
+    case("e2-e4 e7-e5", "d1-h5", AttackerNumber::Zero),
+    case("e2-e4 f7-f5", "d1-h5", AttackerNumber::One(Attack::OnLine(Direction::DownRight, 3))),
+    case("e2-e4 e7-e5 f1-c4 d7-d6 d1-f3 c7-c5", "f3-f7", AttackerNumber::One(Attack::OnLine(Direction::DownRight, 1))),
+    case("white ♔e1 ♖a7 ♖b7 ♚e8", "a7-a8", AttackerNumber::One(Attack::OnLine(Direction::Left, 4))),
+    case("white ♔e1 ♕a1 ♚b8", "a1-a8", AttackerNumber::One(Attack::OnLine(Direction::Left, 1))),
+    case("white ♔e1 ♕a1 ♚c8", "a1-a8", AttackerNumber::One(Attack::OnLine(Direction::Left, 2))),
+    case("white ♔e1 ♕a1 ♚b8", "a1-a7", AttackerNumber::One(Attack::OnLine(Direction::DownLeft, 1))),
+    case("black ♔f1 ♖e1 ♖g1 ♙e2 ♙g2 ♚e8 ♜h8", "e8cg8", AttackerNumber::One(Attack::OnLine(Direction::Up, 7))),
+    case("black ♔f1 Eb3 ♙b4 ♟c4 ♚e8 ♝a6", "c4eb3", AttackerNumber::One(Attack::OnLine(Direction::UpLeft, 5))),
+    case("black ♔c2 Eb3 ♙b4 ♟c4 ♚e8", "c4eb3", AttackerNumber::One(Attack::ByPawn("b3".parse::<Position>().unwrap()))),
+    case("black ♔e1 ♝a2 ♞a1 ♚e8", "a1-c2", AttackerNumber::One(Attack::ByKnight("c2".parse::<Position>().unwrap()))),
+    case("black ♔f1 ♜a1 ♞b1 ♚e8", "b1-d2", AttackerNumber::Two),
+    case("black ♔f1 ♜a1 ♝b1 ♚e8", "b1-d3", AttackerNumber::Two),
+    case("black ♔c2 Eb3 ♙b4 ♟c4 ♜c5 ♚e8", "c4eb3", AttackerNumber::Two),
+    case("black ♔c3 Eb3 ♙b4 ♟c4 ♜c5 ♝a5 ♚e8", "c4eb3", AttackerNumber::Two),
     ::trace //This leads to the arguments being printed in front of the test result.
     )]
     fn test_get_attack_situation(
         game_state_config: &str,
         move_config: &str,
-        expected_attack_situation: AttackSituation,
+        expected_attack_situation: AttackerNumber,
     ) {
         // pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> bool {
         let latest_move = move_config.parse::<Move>().unwrap();

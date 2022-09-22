@@ -12,14 +12,14 @@ pub fn is_queen_side_castling_allowed(
     board: &Board,
 ) -> Option<Position> {
     // fields between rook and king have to be free
-    for column in (1 as i8)..=3 {
+    for column in 1_i8..=3 {
         if !board.is_empty(Position::new_unchecked(column, king_pos.row)) {
             return None;
         }
     }
 
     // king can't be in check from forward, or diagonal direction on from king start to king end pos
-    for column in (2 as i8)..=4 {
+    for column in 2_i8..=4 {
         if is_king_is_attackable_while_castling(Position::new_unchecked(column, king_pos.row), color, board) {
             return None;
         }
@@ -43,14 +43,14 @@ pub fn is_king_side_castling_allowed(
     board: &Board,
 ) -> Option<Position> {
     // fields between rook and king have to be free
-    for column in (5 as i8)..=6 {
+    for column in 5_i8..=6 {
         if !board.is_empty(Position::new_unchecked(column, king_pos.row)) {
             return None;
         }
     }
 
     // king can't be in check from forward, or diagonal direction on from king start to king end pos
-    for column in (4 as i8)..=6 {
+    for column in 4_i8..=6 {
         if is_king_is_attackable_while_castling(Position::new_unchecked(column, king_pos.row), color, board) {
             return None;
         }

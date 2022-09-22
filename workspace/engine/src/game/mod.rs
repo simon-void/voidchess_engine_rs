@@ -46,7 +46,7 @@ impl Game {
         let reachable_moves = match verify_game_state(&new_game_state) {
             Ok(moves) => { moves }
             Err(stopped_reason) => {
-                return MoveResult::Stopped(stopped_reason, new_game_state);
+                return MoveResult::Stopped(stopped_reason, Box::new(new_game_state));
             }
         };
 
@@ -63,7 +63,7 @@ impl Game {
             match new_board_state_or_stopped_reason {
                 Ok(board_states) => {board_states},
                 Err(stopped_reason) => {
-                    return MoveResult::Stopped(stopped_reason, new_game_state);
+                    return MoveResult::Stopped(stopped_reason, Box::new(new_game_state));
                 },
             }
         };
@@ -75,8 +75,7 @@ impl Game {
             board_states: new_board_states,
             half_moves_played: self.half_moves_played + 1,
         };
-        let move_result = MoveResult::Ongoing(new_game, move_stats);
-        move_result
+        MoveResult::Ongoing(Box::new(new_game), move_stats)
     }
 
     pub fn get_reachable_moves(&self) -> &Moves {
@@ -123,10 +122,10 @@ impl str::FromStr for Game {
         if trimmed_desc.is_empty() {
             return Ok(Game::classic())
         }
-        let token_iter = trimmed_desc.split(" ").into_iter();
+        let token_iter = trimmed_desc.split(' ');
 
         // let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
-        let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains("-");
+        let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains('-');
         if desc_contains_moves {
             game_by_moves_from_start(token_iter)
         } else {
@@ -146,14 +145,14 @@ fn game_by_figures_on_board(trimmed_game_config: &str) -> Result<Game, ChessErro
     Ok(Game::from_state(game_state))
 }
 
-fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<Game, ChessError> {
+fn game_by_moves_from_start(token_iter: str::Split<char>) -> Result<Game, ChessError> {
     let mut game = Game::classic();
     for token in token_iter {
         let a_move = token.parse::<Move>()?;
         let move_result = game.play(a_move);
         match move_result {
             MoveResult::Ongoing(new_game, _) => {
-                game = new_game;
+                game = *new_game;
             }
             MoveResult::Stopped(reason, _) => {
                 return Err(ChessError {
@@ -183,8 +182,8 @@ pub enum MoveResult {
     /*
      * bool: was figure taken
      */
-    Ongoing(Game, MoveStats),
-    Stopped(StoppedReason, GameState),
+    Ongoing(Box<Game>, MoveStats),
+    Stopped(StoppedReason, Box<GameState>),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -227,10 +226,7 @@ mod tests {
         expected_is_insufficient_material: bool,
     ) {
         fn is_insufficient_material(move_result: MoveResult) -> bool {
-            match move_result {
-                MoveResult::Stopped(StoppedReason::InsufficientMaterial, _) => true,
-                _ => false,
-            }
+            matches!(move_result, MoveResult::Stopped(StoppedReason::InsufficientMaterial, _))
         }
 
         let game = game_config_testing_white.parse::<Game>().unwrap();

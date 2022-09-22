@@ -2,7 +2,7 @@ use tinyvec::*;
 use crate::game::{StoppedReason, MoveStats};
 use crate::base::Color;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct BoardState {
     state: [u64; 4],
 }
@@ -14,13 +14,13 @@ impl BoardState {
 }
 
 // Default is needed, so that BoardState can be stored in a TinyVec
-impl Default for BoardState {
-    fn default() -> Self {
-        BoardState {
-            state: [0;4],
-        }
-    }
-}
+// impl Default for BoardState {
+//     fn default() -> Self {
+//         BoardState {
+//             state: [0;4],
+//         }
+//     }
+// }
 
 const INMEMORY_NR_OF_BOARD_STATES: usize = 20;
 

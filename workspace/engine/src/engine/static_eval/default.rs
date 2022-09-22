@@ -1,6 +1,6 @@
 use crate::base::{Color, Direction, Position};
 use crate::figure::FigureType;
-use crate::game::GameState;
+use crate::game::{FiguresWithPosArray, GameState};
 
 const VALUE_OF_AREA: f32 = 0.015;
 
@@ -14,7 +14,7 @@ pub fn default_static_eval_for_white(game_state: &GameState) -> f32 {
     (white_value - black_value) + (rules_area_diff_for_white as f32 * VALUE_OF_AREA)
 }
 
-fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 16], color: Color) -> f32 {
+fn get_value(game_state: &GameState, figures: FiguresWithPosArray, color: Color) -> f32 {
     let mut value = 0.0;
     let (backward_left, _, backward_right) = Direction::forward_directions(color.toggle());
     for opt_fig_data in figures.iter() {
@@ -28,7 +28,7 @@ fn get_value(game_state: &GameState, figures: [Option<(FigureType, Position)>; 1
                     FigureType::Queen => 9.0,
                     FigureType::King => 0.0,
                 };
-                value = value + fig_value;
+                value += fig_value;
             },
             None => {
                 break;
@@ -52,13 +52,13 @@ fn get_pawn_value(
         backward_left: Direction,
         backward_right: Direction,
     ) -> bool {
-        let opt_left_backward_figure = pawn_pos.step(backward_left).map(|pos|{game_state.board.get_figure(pos)}).flatten();
+        let opt_left_backward_figure = pawn_pos.step(backward_left).and_then(|pos|{game_state.board.get_figure(pos)});
         if let Some(figure) = opt_left_backward_figure {
             if figure.fig_type == FigureType::Pawn && figure.color == color {
                 return true;
             }
         }
-        let opt_right_backward_figure = pawn_pos.step(backward_right).map(|pos|{game_state.board.get_figure(pos)}).flatten();
+        let opt_right_backward_figure = pawn_pos.step(backward_right).and_then(|pos|{game_state.board.get_figure(pos)});
         if let Some(figure) = opt_right_backward_figure {
             if figure.fig_type == FigureType::Pawn && figure.color == color {
                 return true;

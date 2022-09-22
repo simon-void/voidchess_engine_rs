@@ -59,7 +59,7 @@ fn evaluate_game(game: &Game, pruner: Pruner) -> EvaluatedMove {
     let mut current_max_eval: Evaluation = MIN_EVALUATION;
     for next_move in game.get_reachable_moves().iter() {
         let evaluation = evaluate_move(
-            &game,
+            game,
             *next_move,
             pruner,
             game.get_game_state().turn_by,
@@ -137,11 +137,11 @@ fn init_game(game_config: &str) -> OngoingGameOrEvaluation {
         }
         Ok(game) => {game}
     };
-    OngoingGameOrEvaluation::Ongoing(game)
+    OngoingGameOrEvaluation::Ongoing(Box::new(game))
 }
 
 enum OngoingGameOrEvaluation {
-    Ongoing(Game),
+    Ongoing(Box<Game>),
     Ended(GameEvaluation),
 }
 

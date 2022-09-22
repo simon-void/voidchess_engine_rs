@@ -100,10 +100,10 @@ impl GameState {
                 forward_dir,
             ) = match turn_by {
                 Color::White => {
-                    (5 as i8, 6 as i8, Direction::Down)
+                    (5_i8, 6_i8, Direction::Down)
                 }
                 Color::Black => {
-                    (2 as i8, 3 as i8, Direction::Up)
+                    (2_i8, 3_i8, Direction::Up)
                 }
             };
             if en_passant_pos.row != expected_row {
@@ -139,7 +139,7 @@ impl GameState {
             Some(pos) => pos,
             None => {
                 return Err(ChessError{
-                    msg: format!("no white king configured"),
+                    msg: "no white king configured".to_string(),
                     kind: ErrorKind::IllegalConfig
                 })
             },
@@ -148,7 +148,7 @@ impl GameState {
             Some(pos) => pos,
             None => {
                 return Err(ChessError{
-                    msg: format!("no white king configured"),
+                    msg: "no white king configured".to_string(),
                     kind: ErrorKind::IllegalConfig
                 })
             },
@@ -373,8 +373,8 @@ impl GameState {
         let figures_of_color_with_pos: [Option<(Figure, Position)>; 16] =
             self.board.get_all_figures_of_color(self.turn_by);
 
-        for i in 0..16 as usize {
-            match figures_of_color_with_pos[i] {
+        for figure_of_color in figures_of_color_with_pos {
+            match figure_of_color {
                 Some((figure, pos)) => {
                     figure.for_reachable_moves(pos, self, &mut move_collector);
                 },
@@ -400,8 +400,8 @@ impl GameState {
             figures_of_color_with_pos: [Option<(FigureType, Position)>; 16],
         ) -> usize {
             let mut reachable_move_counter: usize = 0;
-            for i in 0..16 as usize {
-                match figures_of_color_with_pos[i] {
+            for figure_of_color in figures_of_color_with_pos {
+                match figure_of_color {
                     Some((fig_type, pos)) => {
                         reachable_move_counter += count_reachable_moves(fig_type, color, pos, &game_state.board);
                     },
@@ -451,7 +451,7 @@ impl GameState {
 
     pub fn is_active_king_checkmate(&self, latest_move: Move) -> bool {
         let king_pos = self.get_active_king();
-        is_active_king_checkmate(king_pos, self.turn_by, &self, latest_move)
+        is_active_king_checkmate(king_pos, self.turn_by, self, latest_move)
     }
 
     pub fn get_active_king(&self) -> Position {
@@ -490,7 +490,7 @@ impl GameState {
         let debug_format = format!("{:?}", self.moves_played);
         // remove the embracing '[' and ']'
         let last_char_index = debug_format.len()-1;
-        (&debug_format[1..last_char_index]).to_string()
+        debug_format[1..last_char_index].to_string()
     }
 }
 
@@ -502,10 +502,10 @@ impl str::FromStr for GameState {
         if trimmed_desc.is_empty() {
             return Ok(GameState::classic())
         }
-        let token_iter = trimmed_desc.split(" ").into_iter();
+        let token_iter = trimmed_desc.split(' ');
 
         // let desc_contains_figures: bool = "♔♕♗♘♖♙♚♛♝♞♜♟".chars().any(|symbol|{desc.contains(symbol)});
-        let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains("-");
+        let desc_contains_moves: bool = trimmed_desc.is_empty() || trimmed_desc.contains('-');
         if desc_contains_moves {
             game_by_moves_from_start(token_iter)
         } else {
@@ -514,7 +514,7 @@ impl str::FromStr for GameState {
     }
 }
 
-fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<GameState, ChessError> {
+fn game_by_moves_from_start(token_iter: str::Split<char>) -> Result<GameState, ChessError> {
     let mut game_state = GameState::classic();
     for token in token_iter {
         let a_move = token.parse::<Move>()?;
@@ -524,7 +524,7 @@ fn game_by_moves_from_start(token_iter: str::Split<&str>) -> Result<GameState, C
     Ok(game_state)
 }
 
-fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<GameState, ChessError> {
+fn game_by_figures_on_board(mut token_iter: str::Split<char>) -> Result<GameState, ChessError> {
     let first_token = token_iter.next().unwrap();
     let turn_by = match first_token {
         "white" => Color::White,
@@ -543,8 +543,8 @@ fn game_by_figures_on_board(mut token_iter: str::Split<&str>) -> Result<GameStat
     for token in token_iter {
         // tokens should either start with a figure char (from "♔♕♗♘♖♙♚♛♝♞♜♟") or E (for en-passant)
         // followed by a position between "a1" and "h8"
-        if token.starts_with("E") {
-            let en_passant_pos = token[1..].parse::<Position>()?;
+        if let Some(stripped_token) = token.strip_prefix('E') {
+            let en_passant_pos = stripped_token.parse::<Position>()?;
             if let Some(old_en_passant_pos) = opt_en_passant_pos {
                 return Err(ChessError {
                     msg: format!("there are two en-passant tokens present (on {} and {}) but only one is allowed.", old_en_passant_pos, en_passant_pos),
@@ -643,7 +643,7 @@ mod tests {
             toggle_figures_on_board_to(Color::Black, array_of_opt_white_figures, &mut toggled_board);
             toggle_figures_on_board_to(Color::White, array_of_opt_black_figures, &mut toggled_board);
 
-            return GameState {
+            GameState {
                 board: toggled_board,
                 turn_by: self.turn_by.toggle(),
                 white_king_pos: self.black_king_pos.toggle_row(),

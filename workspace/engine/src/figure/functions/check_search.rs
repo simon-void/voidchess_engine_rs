@@ -137,16 +137,17 @@ pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Colo
             #[cfg(debug_assertions)]
             {
                 match board.get_figure(latest_move.to) {
-                    None => assert!(false, "{}", format!(
+                    None => panic!(
                         "to field mustn't be empty after move {} leading to board: {}",
                         latest_move, board
-                    ).as_str()),
+                    ),
                     Some(attacker) => {
                         let king_color = color;
-                        assert_ne!(attacker.color, king_color, "{}", format!(
+                        assert_ne!(
+                            attacker.color, king_color,
                             "possible attacker should be of different color than king, but isn't: attacker pos: {}, latest_move: {}, attacker_type: {:?}, king_pos: {}, king_color: {}, board: {}",
                             latest_move.to, latest_move, attacker.fig_type, king_pos, king_color, board
-                        ))
+                        )
                     }
                 }
             }
@@ -170,15 +171,16 @@ pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color
     #[cfg(debug_assertions)]
     {
         match board.get_figure(attacker_pos) {
-            None => assert!(false, "{}", format!(
+            None => panic!(
                 "attacker_pos shouldn't be empty: {}, king_pos: {}, king_color: {}, board: {}",
                 attacker_pos, king_pos, king_color, board
-            ).as_str()),
+            ),
             Some(attacker) => {
-                assert_ne!(attacker.color, king_color, "{}", format!(
+                assert_ne!(
+                    attacker.color, king_color,
                     "attacker should be of different color than king, but isn't: {}, attacker_type: {:?}, king_pos: {}, king_color: {}, board: {}",
                     attacker_pos, attacker.fig_type, king_pos, king_color, board
-                ))
+                )
             }
         }
     }
@@ -244,6 +246,7 @@ pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color
     }
 }
 
+#[allow(clippy::needless_return)]
 pub fn find_attack_from_behind(freed_up_pos: Position, king_pos: Position, king_color: Color, board: &Board) -> Option<Attack> {
     match king_pos.get_direction(freed_up_pos) {
         None => {return None}
@@ -296,6 +299,7 @@ fn get_queen_or_rook_attack(king_pos: Position, direction: Direction, attacker_p
     )
 }
 
+#[allow(clippy::cast_abs_to_unsigned)]
 fn get_bishop_attack(king_pos: Position, direction: Direction, attacker_pos: Position) -> Attack {
     Attack::OnLine(
         direction,
