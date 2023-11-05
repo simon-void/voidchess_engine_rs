@@ -10,6 +10,7 @@
     <script nomodule src="src/libs/browser-es-module-loader.js"></script>
     <script type='text/javascript' src="src/libs/knockout-3.5.1.js"></script>
 </head>
+<body>
     <h1>VoidchessWeb</h1>
 <!--    <div>(Doesn't work in Firefox yet because of this <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1247687">reason</a>.)<br><br></div>-->
     <div>
@@ -21,6 +22,8 @@
         <div>state: <span data-bind="text: state"></span></div>
         <div>evaluation: <span data-bind="text: evaluation"></span></div>
         <div id="output"></div>
+        <br>
+        <button onclick="location.reload()">Restart</button>
     </div>
 
     <br>
