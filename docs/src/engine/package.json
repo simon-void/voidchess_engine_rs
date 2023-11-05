@@ -13,5 +13,7 @@
   ],
   "module": "voidchess_engine_wasm.js",
   "types": "voidchess_engine_wasm.d.ts",
-  "sideEffects": false
+  "sideEffects": [
+    "./snippets/*"
+  ]
 }
