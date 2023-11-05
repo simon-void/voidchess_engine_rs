@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 echo "compiling to wasm module ..."
 cd ./workspace/wasm/
