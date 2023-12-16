@@ -9,9 +9,9 @@ use crate::base::direction::Direction;
 
 #[derive(Copy, Clone, Eq)]
 pub struct Position {
+    pub index: usize,
     pub column: i8,
     pub row: i8,
-    pub index: usize,
 }
 
 impl Position {
@@ -29,9 +29,9 @@ impl Position {
         //     column, row
         // );
         Position {
+            index: ((row*8)+column) as usize,
             column,
             row,
-            index: ((row*8)+column) as usize,
         }
     }
 
@@ -51,9 +51,9 @@ impl Position {
         );
 
         Position {
+            index: ((row*8)+column) as usize,
             column,
             row,
-            index: ((row*8)+column) as usize,
         }
     }
 
