@@ -354,6 +354,8 @@ mod tests {
     case("a2-a4 h7-h6 a4-a5 b7-b5 a5-b6", 31),
     case("a2-a4 h7-h6 a4-a5 b7-b5 a5-b6 h6-h5 b6-b7 b8-c6 b7Qb8", 31),
     case("a2-a4 h7-h6 a4-a5 b7-b5 a5-b6 h6-h5 b6-b7 b8-c6 b7Qa8", 30),
+    case("g2-g3 a7-a6 f1-g2 a6-a5 g1-f3 a5-a4 e1cg1", 32),
+    case("d2-d3 a7-a6 c1-f4 a6-a5 d1-d2 a5-a4 b1-c3 a4-a3 e1Cc1", 32),
     case("white ♖a1 ♔e1 ♖h1 ♜a8 ♚e8 ♜h8", 6),
     case("black ♖a1 ♔e1 ♚e8", 3),
     ::trace //This leads to the arguments being printed in front of the test result.
