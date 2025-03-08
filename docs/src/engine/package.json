@@ -1,5 +1,6 @@
 {
   "name": "voidchess_engine_wasm",
+  "type": "module",
   "description": "PoC of splitting Rust code to be compiled to wasm into workspaces",
   "version": "0.1.0",
   "repository": {
@@ -11,7 +12,7 @@
     "voidchess_engine_wasm.js",
     "voidchess_engine_wasm.d.ts"
   ],
-  "module": "voidchess_engine_wasm.js",
+  "main": "voidchess_engine_wasm.js",
   "types": "voidchess_engine_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"

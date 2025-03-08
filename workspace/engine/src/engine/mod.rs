@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use rand::thread_rng;
 use crate::game::*;
 use crate::engine::evaluations::*;
 use crate::engine::min_max::{evaluate_move};
@@ -96,7 +97,7 @@ pub fn choose_next_move(mut evaluated_moves: Vec<EvaluatedMove>) -> EvaluatedMov
     };
     let mut random = thread_rng();
     loop {
-        if random.gen::<f32>() < 0.7 {
+        if random.r#gen::<f32>() < 0.7 {
             break;
         }
         let next_move = match best_first_iter.next() {
