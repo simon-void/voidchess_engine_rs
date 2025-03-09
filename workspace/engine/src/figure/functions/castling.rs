@@ -11,16 +11,17 @@ pub fn is_queen_side_castling_allowed(
     king_pos: Position,
     board: &Board,
 ) -> Option<Position> {
+    let king_pos_row = king_pos.row();
     // fields between rook and king have to be free
     for column in 1_i8..=3 {
-        if !board.is_empty(Position::new_unchecked(column, king_pos.row)) {
+        if !board.is_empty(Position::new_unchecked(column, king_pos_row)) {
             return None;
         }
     }
 
     // king can't be in check from forward, or diagonal direction on from king start to king end pos
     for column in 2_i8..=4 {
-        if is_king_is_attackable_while_castling(Position::new_unchecked(column, king_pos.row), color, board) {
+        if is_king_is_attackable_while_castling(Position::new_unchecked(column, king_pos_row), color, board) {
             return None;
         }
     }
@@ -29,7 +30,7 @@ pub fn is_queen_side_castling_allowed(
     if is_king_straight_attackable(king_pos, color, Direction::Right, board) {
         return None;
     }
-    Some(Position::new_unchecked(2, king_pos.row))
+    Some(Position::new_unchecked(2, king_pos_row))
 }
 
 
@@ -42,16 +43,17 @@ pub fn is_king_side_castling_allowed(
     king_pos: Position,
     board: &Board,
 ) -> Option<Position> {
+    let king_pos_row = king_pos.row();
     // fields between rook and king have to be free
     for column in 5_i8..=6 {
-        if !board.is_empty(Position::new_unchecked(column, king_pos.row)) {
+        if !board.is_empty(Position::new_unchecked(column, king_pos_row)) {
             return None;
         }
     }
 
     // king can't be in check from forward, or diagonal direction on from king start to king end pos
     for column in 4_i8..=6 {
-        if is_king_is_attackable_while_castling(Position::new_unchecked(column, king_pos.row), color, board) {
+        if is_king_is_attackable_while_castling(Position::new_unchecked(column, king_pos_row), color, board) {
             return None;
         }
     }
@@ -60,7 +62,7 @@ pub fn is_king_side_castling_allowed(
     if is_king_straight_attackable(king_pos, color, Direction::Left, board) {
         return None;
     }
-    Some(Position::new_unchecked(6, king_pos.row))
+    Some(Position::new_unchecked(6, king_pos_row))
 }
 
 fn is_king_is_attackable_while_castling(king_pos: Position, color: Color, board: &Board) -> bool {

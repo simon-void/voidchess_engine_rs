@@ -68,8 +68,8 @@ fn get_pawn_value(
     }
 
     let steps_taken = match color {
-        Color::White => pawn_pos.row - 1,
-        Color::Black => 6 -pawn_pos.row,
+        Color::White => pawn_pos.row() - 1,
+        Color::Black => 6 - pawn_pos.row(),
     } as f32;
     let steps_value = if is_protected(game_state, pawn_pos, color, backward_left, backward_right) {
         0.2

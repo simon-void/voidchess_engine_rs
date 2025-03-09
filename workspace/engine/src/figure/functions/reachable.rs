@@ -103,7 +103,8 @@ fn for_reachable_pawn_moves(
         pawn_pos_to: Position,
         move_collector: &mut Moves,
     ) {
-        if pawn_pos_to.row==0 || pawn_pos_to.row==7 {
+        let pawn_pos_to_row = pawn_pos_to.row();
+        if pawn_pos_to_row==0 || pawn_pos_to_row==7 {
             [
                 MoveType::PawnPromotion(PromotionType::Queen),
                 MoveType::PawnPromotion(PromotionType::Knight),
@@ -135,7 +136,8 @@ fn for_reachable_pawn_moves(
             move_collector_pawn_moves(pawn_pos, forward_pos, move_collector);
 
             // check for two-jump option
-            if (pawn_pos.row==1 && color==Color::White) || (pawn_pos.row==6 && color==Color::Black) {
+            let pawn_pos_row = pawn_pos.row();
+            if (pawn_pos_row==1 && color==Color::White) || (pawn_pos_row==6 && color==Color::Black) {
                 let double_forward_pos = forward_pos.step(forward).unwrap();
                 if let FieldContent::Empty = board.get_content_type(double_forward_pos, color) {
                     move_collector_pawn_moves(pawn_pos, double_forward_pos, move_collector);

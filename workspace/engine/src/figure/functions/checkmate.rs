@@ -43,7 +43,7 @@ fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &Game
             let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from, king_pos, king_color, &game_state.board);
             match is_check_from_end_pos {
                 None => {
-                    let taken_pawn_pos: Position = Position::new_unchecked(after_move.to.column, after_move.from.row);
+                    let taken_pawn_pos: Position = Position::new_unchecked(after_move.to.column(), after_move.from.row());
                     let is_check_from_behind_taken_pawn = find_attack_from_behind(taken_pawn_pos, king_pos, king_color, &game_state.board);
                     AttackerNumber::from_two_possibilities(is_check_from_behind_start_pos, is_check_from_behind_taken_pawn)
                 }
@@ -248,18 +248,20 @@ fn is_reachable_by_pawn(
     to_pos: Position,
     game_state: &GameState,
 ) -> bool {
+    let (pawn_pos_column, pawn_pos_row) = pawn_pos.column_and_row();
+    let (to_pos_column, to_pos_row) = to_pos.column_and_row();
     let pawn_is_white = game_state.turn_by==Color::White;
     let row_step = if pawn_is_white {
         1
     } else {
         -1
     };
-    let column_diff = (pawn_pos.column-to_pos.column).abs();
+    let column_diff = (pawn_pos_column-to_pos_column).abs();
     if column_diff > 1 {
         return false;
     }
     if column_diff==1 {
-        if (to_pos.row - pawn_pos.row) != row_step {
+        if (to_pos_row - pawn_pos_row) != row_step {
             return false;
         }
         if game_state.board.get_content_type(to_pos, game_state.turn_by) == FieldContent::OpponentFigure {
@@ -271,16 +273,16 @@ fn is_reachable_by_pawn(
             false
         }
     } else {
-        let one_step_forward_row = pawn_pos.row + row_step;
-        if to_pos.row==one_step_forward_row {
+        let one_step_forward_row = pawn_pos_row + row_step;
+        if to_pos_row==one_step_forward_row {
             game_state.board.is_empty(to_pos)
         } else {
             let two_steps_forward_row = one_step_forward_row + row_step;
             let start_row: i8 = if pawn_is_white {1} else {6};
-            to_pos.row==two_steps_forward_row &&
-                pawn_pos.row==start_row &&
+            to_pos_row==two_steps_forward_row &&
+                pawn_pos_row==start_row &&
                 game_state.board.is_empty(to_pos) &&
-                game_state.board.is_empty(Position::new_unchecked(pawn_pos.column, one_step_forward_row))
+                game_state.board.is_empty(Position::new_unchecked(pawn_pos_column, one_step_forward_row))
 
         }
     }

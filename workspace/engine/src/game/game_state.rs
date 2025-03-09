@@ -58,7 +58,7 @@ impl GameState {
             }
             match figure_and_pos.figure.fig_type {
                 FigureType::Pawn => {
-                    let pawn_pos_row = figure_and_pos.pos.row;
+                    let pawn_pos_row = figure_and_pos.pos.row();
                     if pawn_pos_row==0 || pawn_pos_row==7 {
                         return Err(ChessError{
                             msg: format!("can't place a pawn on {}", figure_and_pos.pos),
@@ -106,7 +106,7 @@ impl GameState {
                     (2_i8, 3_i8, Direction::Up)
                 }
             };
-            if en_passant_pos.row != expected_row {
+            if en_passant_pos.row() != expected_row {
                 return Err(ChessError {
                     msg: format!("it's {}'s turn so the en-passant position has to be on the {}th row but it's {}.", turn_by, expected_row_in_text, en_passant_pos),
                     kind: ErrorKind::IllegalConfig,
@@ -244,7 +244,7 @@ impl GameState {
             FigureType::King => {
                 let figure_gets_caught = do_normal_move(&mut new_board, next_move);
                 let new_king_pos = next_move.to;
-                let is_castling = (next_move.from.column-next_move.to.column).abs() == 2;
+                let is_castling = (next_move.from.column()-next_move.to.column()).abs() == 2;
                 if is_castling {
                     update_rock_position_after_castling(&mut new_board, next_move);
                 }
@@ -316,8 +316,8 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             Some(Position::new_unchecked(
-                                next_move.to.column,
-                                (next_move.from.row + next_move.to.row) / 2,
+                                next_move.to.column(),
+                                (next_move.from.row() + next_move.to.row()) / 2,
                             )),
                             MoveStats {
                                 did_catch_figure: false,
@@ -578,8 +578,8 @@ fn update_rock_position_after_castling(
     new_board: &mut Board,
     next_move: Move,
 ) {
-    let castling_row = next_move.to.row;
-    let (rook_from, rook_to) = if next_move.to.column == 6 {
+    let castling_row = next_move.to.row();
+    let (rook_from, rook_to) = if next_move.to.column() == 6 {
         (Position::new_unchecked(7, castling_row), Position::new_unchecked(5, castling_row))
     } else {
         (Position::new_unchecked(0, castling_row), Position::new_unchecked(3, castling_row))
@@ -595,7 +595,7 @@ fn do_en_passant_move(
 ) {
     do_normal_move(new_board, next_move);
     let double_stepped_pawn_pos =
-        Position::new_unchecked(next_move.to.column, next_move.from.row);
+        Position::new_unchecked(next_move.to.column(), next_move.from.row());
     new_board.clear_field(double_stepped_pawn_pos)
 }
 

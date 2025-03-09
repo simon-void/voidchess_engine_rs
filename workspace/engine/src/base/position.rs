@@ -10,11 +10,27 @@ use crate::base::direction::Direction;
 #[derive(Copy, Clone, Eq)]
 pub struct Position {
     pub index: usize,
-    pub column: i8,
-    pub row: i8,
 }
 
 impl Position {
+    pub fn column(&self) -> i8 { Self::column_from_index(self.index) }
+
+    pub fn row(&self) -> i8 { Self::row_from_index(self.index) }
+
+    pub fn column_and_row(&self) -> (i8, i8) { (Self::column_from_index(self.index), Self::row_from_index(self.index)) }
+
+    const fn column_from_index(index: usize) -> i8 {
+        (index & 7) as i8 // equals: index % 8
+    }
+
+    const fn row_from_index(index: usize) -> i8 {
+        (index >> 3) as i8 // equals: index / 8
+    }
+
+    const fn index_from(column: i8, row: i8) -> usize {
+        ((row << 3) | column) as usize
+    }
+
     pub fn new_checked(column: i8, row: i8) -> Option<Position> {
         if !(I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row)) {
             return None
@@ -23,15 +39,8 @@ impl Position {
     }
 
     pub const fn new_unchecked(column: i8, row: i8) -> Position {
-        // debug_assert!(
-        //     I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
-        //     "column and row were expected to be 0..64 but were column: {} and row: {}",
-        //     column, row
-        // );
         Position {
-            index: ((row*8)+column) as usize,
-            column,
-            row,
+            index: Self::index_from(column, row),
         }
     }
 
@@ -41,20 +50,8 @@ impl Position {
             "index was expected to be 0..64 but was {}",
             index
         );
-        let i = index as i8;
-        let column = i % 8;
-        let row = i/8;
-        debug_assert!(
-          I8_RANGE_07.contains(&column) && I8_RANGE_07.contains(&row),
-          "column and row were expected to be 0..64 but were column: {} and row: {}",
-          column, row
-        );
 
-        Position {
-            index: ((row*8)+column) as usize,
-            column,
-            row,
-        }
+        Position { index }
     }
 
     pub fn from_code(code: &str) -> Position {
@@ -62,31 +59,31 @@ impl Position {
     }
 
     pub fn get_row_distance(&self, other: Position) -> i8 {
-        (self.row - other.row).abs()
+        (self.row() - other.row()).abs()
     }
 
     pub fn step(&self, direction: Direction) -> Option<Position> {
         match direction {
             Direction::Right => {
-                let new_column = self.column + 1;
-                if new_column == 8 { None } else { Some(Position::new_unchecked(new_column, self.row)) }
+                let new_column = self.column() + 1;
+                if new_column == 8 { None } else { Some(Position::new_unchecked(new_column, self.row())) }
             },
             Direction::Left => {
-                let new_column = self.column - 1;
-                if new_column == -1 { None } else { Some(Position::new_unchecked(new_column, self.row)) }
+                let new_column = self.column() - 1;
+                if new_column == -1 { None } else { Some(Position::new_unchecked(new_column, self.row())) }
             },
             Direction::Up => {
-                let new_row = self.row + 1;
-                if new_row == 8 { None } else { Some(Position::new_unchecked(self.column, new_row)) }
+                let new_row = self.row() + 1;
+                if new_row == 8 { None } else { Some(Position::new_unchecked(self.column(), new_row)) }
             },
             Direction::Down => {
-                let new_row = self.row - 1;
-                if new_row == -1 { None } else { Some(Position::new_unchecked(self.column, new_row )) }
+                let new_row = self.row() - 1;
+                if new_row == -1 { None } else { Some(Position::new_unchecked(self.column(), new_row )) }
             },
-            Direction::UpRight => Position::new_checked(self.column + 1, self.row + 1),
-            Direction::UpLeft => Position::new_checked(self.column - 1, self.row + 1),
-            Direction::DownLeft => Position::new_checked(self.column - 1, self.row - 1),
-            Direction::DownRight => Position::new_checked(self.column + 1, self.row - 1),
+            Direction::UpRight => Position::new_checked(self.column() + 1, self.row() + 1),
+            Direction::UpLeft => Position::new_checked(self.column() - 1, self.row() + 1),
+            Direction::DownLeft => Position::new_checked(self.column() - 1, self.row() - 1),
+            Direction::DownRight => Position::new_checked(self.column() + 1, self.row() - 1),
         }
     }
 
@@ -99,7 +96,7 @@ impl Position {
         column_delta: i8,
         row_delta: i8,
     ) -> Option<Position> {
-        Position::new_checked(self.column + column_delta, self.row + row_delta)
+        Position::new_checked(self.column() + column_delta, self.row() + row_delta)
     }
 
     pub fn count_reachable_directed_positions(
@@ -177,21 +174,20 @@ impl Position {
 
     pub fn is_on_ground_row(&self, color: Color) -> bool {
         match color {
-            Color::Black if self.row == 7 => true,
-            Color::White if self.row == 0 => true,
-            _ => false,
+            Color::Black => self.index > 55,
+            Color::White => self.index < 8,
         }
     }
 
     pub fn is_reachable_by_knight(&self, pos: Position) -> bool {
-        let column_diff = (self.column - pos.column).abs();
-        let row_diff = (self.row - pos.row).abs();
+        let column_diff = (self.column() - pos.column()).abs();
+        let row_diff = (self.row() - pos.row()).abs();
         column_diff != 0 && row_diff != 0 && (column_diff + row_diff) == 3
     }
 
     pub fn toggle_row(&self) -> Position {
         Position::new_unchecked(
-            self.column, 7-self.row,
+            self.column(), 7-self.row(),
         )
     }
 
@@ -199,8 +195,8 @@ impl Position {
         if *self == to {
            return None;
         }
-        let row_diff = to.row - self.row;
-        let column_diff = to.column - self.column;
+        let row_diff = to.row() - self.row();
+        let column_diff = to.column() - self.column();
         if row_diff == 0 {
             return if column_diff.is_positive() {
                 Some(Direction::Right)
@@ -264,8 +260,8 @@ impl PartialEq for Position {
 }
 
 impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}", (self.column + 97) as u8 as char, (self.row+49) as u8 as char)
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", (self.column() + 97) as u8 as char, (self.row()+49) as u8 as char)
     }
 }
 
@@ -424,8 +420,8 @@ mod tests {
     )]
     fn test_position_from_str(pos_str: &str, expected_column: i8, expected_row: i8, expected_index: usize) {
         let pos = pos_str.parse::<Position>().unwrap();
-        assert_eq!(pos.column, expected_column);
-        assert_eq!(pos.row, expected_row);
+        assert_eq!(pos.column(), expected_column);
+        assert_eq!(pos.row(), expected_row);
         assert_eq!(pos.index, expected_index);
     }
 
@@ -474,5 +470,39 @@ mod tests {
 
         let actual_opt_direction = from.get_direction(to);
         assert_eq!(actual_opt_direction, expected_direction);
+    }
+
+    #[test]
+    fn test_x_and_y_getter() {
+        for column in 0..7  {
+            for row in 0..7  {
+                let pos = Position::new_unchecked(column, row);
+                assert_eq!(pos.column(), column, "column from column {} and row {}", column, row);
+                assert_eq!(pos.row(), row, "row from column {} and row {}", column, row);
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_on_ground_row() {
+        for column in 0..7  {
+            for row in 0..7  {
+                let pos = Position::new_unchecked(column, row);
+                assert_eq!(pos.is_on_ground_row(Color::White), row==0, "is_on_ground with color White on column {} and row {}", column, row);
+                assert_eq!(pos.is_on_ground_row(Color::Black), row==7, "is_on_ground with color Black on column {} and row {}", column, row);
+            }
+        }
+    }
+
+    #[test]
+    fn test_toggle_row() {
+        for column in 0..7  {
+            for row in 0..7  {
+                let pos = Position::new_unchecked(column, row);
+                let toggled_pos = pos.toggle_row();
+                assert_eq!(toggled_pos.column(), pos.column(), "column for column {} and row {}", column, row);
+                assert_eq!(toggled_pos.row(), 7-pos.row(), "row for column {} and row {}", column, row);
+            }
+        }
     }
 }

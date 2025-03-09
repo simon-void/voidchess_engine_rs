@@ -107,9 +107,9 @@ pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Colo
     match latest_move.move_type {
         MoveType::Castling(castling_type) => {
             let castling_rook_end_pos = if castling_type == CastlingType::KingSide {
-                Position::new_unchecked(5, latest_move.to.row)
+                Position::new_unchecked(5, latest_move.to.row())
             } else {
-                Position::new_unchecked(3, latest_move.to.row)
+                Position::new_unchecked(3, latest_move.to.row())
             };
             debug_assert!(!board.is_empty(castling_rook_end_pos), "{}", format!(
                 "board at castling rock pos must contain rook but is empty. expected rook pos: {}, king_pos: {}, latest_move: {}, board: {}",
@@ -128,7 +128,7 @@ pub fn is_king_in_check_after(latest_move: Move, king_pos: Position, color: Colo
                 find_attack_from_behind(latest_move.from, king_pos, color, board).is_some() {
                 return true;
             }
-            let taken_pawn_pos: Position = Position::new_unchecked(latest_move.to.column, latest_move.from.row);
+            let taken_pawn_pos: Position = Position::new_unchecked(latest_move.to.column(), latest_move.from.row());
             if find_attack_from_behind(taken_pawn_pos, king_pos, color, board).is_some() {
                 return true;
             }
@@ -229,7 +229,7 @@ pub fn gives_chess(attacker_pos: Position, king_pos: Position, king_color: Color
                     }
                 },
                 FigureType::Pawn => {
-                    if (attacker_pos.column-king_pos.column).abs()==1 && {
+                    if (attacker_pos.column()-king_pos.column()).abs()==1 && {
                         let (forward_left, _, forward_right) = Direction::forward_directions(king_color);
                         direction== forward_left ||direction== forward_right
                     } {
@@ -293,8 +293,8 @@ fn get_queen_or_rook_attack(king_pos: Position, direction: Direction, attacker_p
     Attack::OnLine(
         direction,
         max(
-            (king_pos.row - attacker_pos.row).abs(),
-            (king_pos.column - attacker_pos.column).abs(),
+            (king_pos.row() - attacker_pos.row()).abs(),
+            (king_pos.column() - attacker_pos.column()).abs(),
         ) as usize
     )
 }
@@ -303,7 +303,7 @@ fn get_queen_or_rook_attack(king_pos: Position, direction: Direction, attacker_p
 fn get_bishop_attack(king_pos: Position, direction: Direction, attacker_pos: Position) -> Attack {
     Attack::OnLine(
         direction,
-        (king_pos.row - attacker_pos.row).abs() as usize
+        (king_pos.row() - attacker_pos.row()).abs() as usize
     )
 }
 
