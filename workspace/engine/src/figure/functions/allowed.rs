@@ -14,7 +14,7 @@ pub fn get_allowed_moves(game_config: &str) -> Vec<Move> {
         |&&a_move| is_not_bound(&game, a_move)
     ).filter(
         |&&a_move| {
-            if let MoveType::PawnPromotion(promo_type) = a_move.move_type {
+            if let MoveType::PawnPromotion(promo_type) = a_move.move_type() {
                 promo_type==PromotionType::Queen
             } else {
                 true

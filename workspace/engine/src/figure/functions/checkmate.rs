@@ -20,7 +20,7 @@ pub fn is_active_king_checkmate(king_pos: Position, king_color: Color, game_stat
 }
 
 fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &GameState, after_move: Move) -> AttackerNumber {
-    match after_move.move_type {
+    match after_move.move_type() {
         MoveType::Castling(castling_type) => {
             let rock_row = if game_state.turn_by==Color::White {
                 7
@@ -39,11 +39,11 @@ fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &Game
             }
         }
         MoveType::EnPassant => {
-            let is_check_from_end_pos = gives_chess(after_move.to, king_pos, king_color, &game_state.board);
-            let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from, king_pos, king_color, &game_state.board);
+            let is_check_from_end_pos = gives_chess(after_move.to(), king_pos, king_color, &game_state.board);
+            let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from(), king_pos, king_color, &game_state.board);
             match is_check_from_end_pos {
                 None => {
-                    let taken_pawn_pos: Position = Position::new_unchecked(after_move.to.column(), after_move.from.row());
+                    let taken_pawn_pos: Position = Position::new_unchecked(after_move.to().column(), after_move.from().row());
                     let is_check_from_behind_taken_pawn = find_attack_from_behind(taken_pawn_pos, king_pos, king_color, &game_state.board);
                     AttackerNumber::from_two_possibilities(is_check_from_behind_start_pos, is_check_from_behind_taken_pawn)
                 }
@@ -53,8 +53,8 @@ fn get_attack_situation(king_pos: Position, king_color: Color, game_state: &Game
             }
         }
         _ => {
-            let is_check_from_end_pos = gives_chess(after_move.to, king_pos, king_color, &game_state.board);
-            let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from, king_pos, king_color, &game_state.board);
+            let is_check_from_end_pos = gives_chess(after_move.to(), king_pos, king_color, &game_state.board);
+            let is_check_from_behind_start_pos = find_attack_from_behind(after_move.from(), king_pos, king_color, &game_state.board);
             AttackerNumber::from_two_possibilities(is_check_from_end_pos, is_check_from_behind_start_pos)
         }
     }

@@ -200,7 +200,7 @@ impl GameState {
 
     pub fn do_move(&self, next_move: Move) -> (GameState, MoveStats) {
         debug_assert!(
-            next_move.to != self.white_king_pos && next_move.to != self.black_king_pos,
+            next_move.to() != self.white_king_pos && next_move.to() != self.black_king_pos,
             "move {} would capture a king on game {}", next_move, self.board
         );
         debug_assert!(
@@ -213,7 +213,7 @@ impl GameState {
         );
 
         let mut new_board = self.board.clone();
-        let moving_figure: Figure = self.board.get_figure(next_move.from).unwrap();
+        let moving_figure: Figure = self.board.get_figure(next_move.from()).unwrap();
 
         let mut new_is_white_queen_side_castling_possible = self.is_white_queen_side_castling_still_possible;
         let mut new_is_white_king_side_castling_possible = self.is_white_king_side_castling_still_possible;
@@ -221,16 +221,18 @@ impl GameState {
         let mut new_is_black_king_side_castling_possible = self.is_black_king_side_castling_still_possible;
 
         {
-            if next_move.from == WHITE_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_QUEEN_SIDE_ROOK_STARTING_POS {
+            let next_move_from = next_move.from();
+            let next_move_to = next_move.to();
+            if next_move_from == WHITE_QUEEN_SIDE_ROOK_STARTING_POS || next_move_to == WHITE_QUEEN_SIDE_ROOK_STARTING_POS {
                 new_is_white_queen_side_castling_possible.deactivate()
             }
-            if next_move.from == WHITE_KING_SIDE_ROOK_STARTING_POS || next_move.to == WHITE_KING_SIDE_ROOK_STARTING_POS {
+            if next_move_from == WHITE_KING_SIDE_ROOK_STARTING_POS || next_move_to == WHITE_KING_SIDE_ROOK_STARTING_POS {
                 new_is_white_king_side_castling_possible.deactivate()
             }
-            if next_move.from == BLACK_QUEEN_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_QUEEN_SIDE_ROOK_STARTING_POS {
+            if next_move_from == BLACK_QUEEN_SIDE_ROOK_STARTING_POS || next_move_to == BLACK_QUEEN_SIDE_ROOK_STARTING_POS {
                 new_is_black_queen_side_castling_possible.deactivate()
             }
-            if next_move.from == BLACK_KING_SIDE_ROOK_STARTING_POS || next_move.to == BLACK_KING_SIDE_ROOK_STARTING_POS {
+            if next_move_from == BLACK_KING_SIDE_ROOK_STARTING_POS || next_move_to == BLACK_KING_SIDE_ROOK_STARTING_POS {
                 new_is_black_king_side_castling_possible.deactivate()
             }
         }
@@ -243,8 +245,8 @@ impl GameState {
         ) = match moving_figure.fig_type {
             FigureType::King => {
                 let figure_gets_caught = do_normal_move(&mut new_board, next_move);
-                let new_king_pos = next_move.to;
-                let is_castling = (next_move.from.column()-next_move.to.column()).abs() == 2;
+                let new_king_pos = next_move.to();
+                let is_castling = (next_move.from().column()-next_move.to().column()).abs() == 2;
                 if is_castling {
                     update_rock_position_after_castling(&mut new_board, next_move);
                 }
@@ -279,20 +281,20 @@ impl GameState {
             },
             FigureType::Pawn => {
                 fn compute_pawn_move_type(this: &GameState, pawn_move: Move) -> PawnMoveType {
-                    if pawn_move.from.get_row_distance(pawn_move.to) == 2 {
+                    if pawn_move.from().get_row_distance(pawn_move.to()) == 2 {
                         return PawnMoveType::DoubleStep
                     }
                     if let Some(en_passant_pos) = this.en_passant_intercept_pos {
-                        if pawn_move.to == en_passant_pos {
+                        if pawn_move.to() == en_passant_pos {
                             return PawnMoveType::EnPassantIntercept
                         }
                     }
                     PawnMoveType::SingleStep
                 }
                 fn handle_pawn_promotion_after_move(new_board: &mut Board, pawn_move: Move, pawn_color: Color) {
-                    if let MoveType::PawnPromotion(promo_type) = pawn_move.move_type {
+                    if let MoveType::PawnPromotion(promo_type) = pawn_move.move_type() {
                         new_board.set_figure(
-                            pawn_move.to,
+                            pawn_move.to(),
                             Figure{ fig_type: promo_type.get_figure_type(), color: pawn_color }
                         );
                     }
@@ -316,8 +318,8 @@ impl GameState {
                         (
                             self.white_king_pos, self.black_king_pos,
                             Some(Position::new_unchecked(
-                                next_move.to.column(),
-                                (next_move.from.row() + next_move.to.row()) / 2,
+                                next_move.to().column(),
+                                (next_move.from().row() + next_move.to().row()) / 2,
                             )),
                             MoveStats {
                                 did_catch_figure: false,
@@ -569,17 +571,17 @@ fn do_normal_move(
     new_board: &mut Board,
     next_move: Move,
 ) -> bool {
-    let moving_figure: Figure = new_board.get_figure(next_move.from).expect("field the figure moves from is empty");
-    new_board.clear_field(next_move.from);
-    new_board.set_figure(next_move.to, moving_figure)
+    let moving_figure: Figure = new_board.get_figure(next_move.from()).expect("field the figure moves from is empty");
+    new_board.clear_field(next_move.from());
+    new_board.set_figure(next_move.to(), moving_figure)
 }
 
 fn update_rock_position_after_castling(
     new_board: &mut Board,
     next_move: Move,
 ) {
-    let castling_row = next_move.to.row();
-    let (rook_from, rook_to) = if next_move.to.column() == 6 {
+    let castling_row = next_move.to().row();
+    let (rook_from, rook_to) = if next_move.to().column() == 6 {
         (Position::new_unchecked(7, castling_row), Position::new_unchecked(5, castling_row))
     } else {
         (Position::new_unchecked(0, castling_row), Position::new_unchecked(3, castling_row))
@@ -595,7 +597,7 @@ fn do_en_passant_move(
 ) {
     do_normal_move(new_board, next_move);
     let double_stepped_pawn_pos =
-        Position::new_unchecked(next_move.to.column(), next_move.from.row());
+        Position::new_unchecked(next_move.to().column(), next_move.from().row());
     new_board.clear_field(double_stepped_pawn_pos)
 }
 
@@ -791,13 +793,13 @@ mod tests {
         let game_state = game_state_config.parse::<GameState>().unwrap();
         let promoting_move = promoting_move_str.parse::<Move>().unwrap();
         let expected_color_of_promoted_figure = game_state.turn_by;
-        let expected_promo_figure_type = if let MoveType::PawnPromotion(promo_type) = promoting_move.move_type {
+        let expected_promo_figure_type = if let MoveType::PawnPromotion(promo_type) = promoting_move.move_type() {
             promo_type.get_figure_type()
         } else {
             panic!("expected move that includes a pawn promotion, but got {}", promoting_move_str)
         };
         let (new_game_state, _) = game_state.do_move(promoting_move);
-        let promoted_figure = new_game_state.board.get_figure(promoting_move.to);
+        let promoted_figure = new_game_state.board.get_figure(promoting_move.to());
         if let Some(figure) = promoted_figure {
             println!("{}", new_game_state.get_fen_part1to4());
             assert_eq!(figure.color, expected_color_of_promoted_figure);

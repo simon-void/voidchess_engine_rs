@@ -168,7 +168,7 @@ fn game_by_moves_from_start(token_iter: str::Split<char>) -> Result<Game, ChessE
 fn verify_game_state(game_state: &GameState) -> Result<Moves, StoppedReason> {
     let passive_king_pos = game_state.get_passive_king_pos();
     let reachable_moves = game_state.get_reachable_moves();
-    if reachable_moves.iter().any(|reachable_move| reachable_move.to == passive_king_pos) {
+    if reachable_moves.iter().any(|reachable_move| reachable_move.to() == passive_king_pos) {
         return Err(StoppedReason::KingInCheckAfterMove);
     }
     if !game_state.board.contains_sufficient_material_to_continue() {

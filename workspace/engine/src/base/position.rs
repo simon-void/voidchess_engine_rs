@@ -185,6 +185,7 @@ impl Position {
         column_diff != 0 && row_diff != 0 && (column_diff + row_diff) == 3
     }
 
+    #[cfg(test)]
     pub fn toggle_row(&self) -> Position {
         Position::new_unchecked(
             self.column(), 7-self.row(),

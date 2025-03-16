@@ -86,11 +86,11 @@ fn for_reachable_pawn_moves(
             FieldContent::Empty => {
                 if let Some(en_passant_intercept_pos) = opt_en_passant_intercept_pos {
                     if en_passant_intercept_pos==diagonal_forward_pos {
-                        move_collector.push(Move{
-                            from: pawn_pos,
-                            to: diagonal_forward_pos,
-                            move_type: MoveType::EnPassant
-                        });
+                        move_collector.push(Move::new(
+                            pawn_pos,
+                            diagonal_forward_pos,
+                            Some(MoveType::EnPassant),
+                        ));
                     }
                 }
             }
@@ -109,18 +109,18 @@ fn for_reachable_pawn_moves(
                 MoveType::PawnPromotion(PromotionType::Queen),
                 MoveType::PawnPromotion(PromotionType::Knight),
             ].iter().for_each(|pawn_promo|{
-                move_collector.push(Move{
-                    from: pawn_pos_from,
-                    to: pawn_pos_to,
-                    move_type: *pawn_promo
-                });
+                move_collector.push(Move::new(
+                    pawn_pos_from,
+                    pawn_pos_to,
+                    Some(*pawn_promo),
+                ));
             });
         } else {
-            move_collector.push(Move{
-                from: pawn_pos_from,
-                to: pawn_pos_to,
-                move_type: MoveType::Normal
-            });
+            move_collector.push(Move::new(
+                pawn_pos_from,
+                pawn_pos_to,
+                Some(MoveType::Normal),
+            ));
         };
     }
 
@@ -155,7 +155,7 @@ fn for_reachable_rook_moves(
 ) {
     STRAIGHT_DIRECTIONS.iter().for_each(|&direction|{
         for pos_to in rook_pos.reachable_directed_positions(color, direction, board) {
-            move_collector.push(Move::new(rook_pos, pos_to));
+            move_collector.push(Move::new(rook_pos, pos_to, None));
         }
     });
 }
@@ -167,7 +167,7 @@ fn for_reachable_knight_moves(
     move_collector: &mut Moves,
 ) {
     for pos_to in knight_pos.reachable_knight_positions(color, board) {
-        move_collector.push(Move::new(knight_pos, pos_to));
+        move_collector.push(Move::new(knight_pos, pos_to, None));
     }
 }
 
@@ -179,7 +179,7 @@ fn for_reachable_bishop_moves(
 ) {
     DIAGONAL_DIRECTIONS.iter().for_each(|&direction|{
         for pos_to in bishop_pos.reachable_directed_positions(color, direction, board) {
-            move_collector.push(Move::new(bishop_pos, pos_to));
+            move_collector.push(Move::new(bishop_pos, pos_to, None));
         }
     });
 }
@@ -192,7 +192,7 @@ fn for_reachable_queen_moves(
 ) {
     ALL_DIRECTIONS.iter().for_each(|&direction|{
         for pos_to in queen_pos.reachable_directed_positions(color, direction, board) {
-            move_collector.push(Move::new(queen_pos, pos_to));
+            move_collector.push(Move::new(queen_pos, pos_to, None));
         }
     });
 }
@@ -209,28 +209,28 @@ fn for_reachable_king_moves(
         if let Some(pos_to) = king_pos.step(direction) {
             match board.get_figure(pos_to) {
                 Some(figure) => if figure.color != color {
-                    move_collector.push(Move::new(king_pos, pos_to))
+                    move_collector.push(Move::new(king_pos, pos_to, None))
                 }
-                None => move_collector.push(Move::new(king_pos, pos_to))
+                None => move_collector.push(Move::new(king_pos, pos_to, None))
             }
         }
     });
     if is_queen_side_castling_still_possible {
         if let Some(rook_pos) = is_queen_side_castling_allowed(color, king_pos, board) {
-            move_collector.push(Move{
-                from: king_pos,
-                to: rook_pos,
-                move_type: MoveType::Castling(CastlingType::QueenSide)
-            })
+            move_collector.push(Move::new(
+                king_pos,
+                rook_pos,
+                Some(MoveType::Castling(CastlingType::QueenSide)),
+            ))
         }
     }
     if is_king_side_castling_still_possible {
         if let Some(rook_pos) = is_king_side_castling_allowed(color, king_pos, board) {
-            move_collector.push(Move{
-                from: king_pos,
-                to: rook_pos,
-                move_type: MoveType::Castling(CastlingType::KingSide)
-            })
+            move_collector.push(Move::new(
+                king_pos,
+                rook_pos,
+                Some(MoveType::Castling(CastlingType::KingSide)),
+            ))
         }
     }
 }
